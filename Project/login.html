@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Sign In</title>
+    <link rel="stylesheet" href="Style/login.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <img src="assets/bgImage1.png" alt="Background" class="background-img">
+            <div class="overlay-text">
+                <h1>Organize Your Life</h1>
+                <p>Simple, Seamless, Smart</p>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="form-container">
+                <img src="assets/logo.png" alt="Taskly Logo" class="logo">
+                <h1 class="app-title">taskly</h1>
+                <p class="subtitle">Clarity meets creativity through planning</p>
+
+                <h2>Welcome</h2>
+                <p class="tagline">Sign in to continue your productive journey</p>
+
+                <form id="loginForm" class="login-form">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter email address" required>
+
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+                    <div class="options">
+                        <label>
+                            <input type="checkbox" id="rememberMe">
+                            Remember me
+                        </label>
+                        <a href="resetPassword.html" class="forgot-link">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Sign in →</button>
+
+                    <div class="divider">
+                        <span>or continue with</span>
+                    </div>
+
+                    <button type="button" class="btn-google">
+                        <img src="assets/googleIcon.png" alt="Google Icon" class="google-icon"> Google
+                    </button>
+                </form>
+
+                <p class="register-text">
+                    Don’t have an account? <a href="register.html">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const userData = JSON.parse(localStorage.getItem('tasklyUser'));
+
+            if (!email || !password) {
+                alert("Please fill out all fields.");
+                return;
+            }
+
+            if (!userData) {
+                alert("No registered user found. Please register first.");
+                return;
+            }
+
+            if (email === userData.email && password === userData.password) {
+                alert(`✅ Welcome back, ${userData.fullname}!`);
+                loginForm.reset();
+            } else {
+                alert("❌ Incorrect email or password. Please try again.");
+            }
+        });
+    </script>
+</body>
+</html>

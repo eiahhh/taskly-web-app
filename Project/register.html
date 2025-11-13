@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Create Account</title>
+    <link rel="stylesheet" href="Style/register.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <img src="assets/bgImage2.png" alt="Background" class="background-img">
+            <div class="overlay-text">
+                <h1>Organize Your Life</h1>
+                <p>Simple, Seamless, Smart</p>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="form-container">
+                <img src="assets/logo.png" alt="Taskly Logo" class="logo">
+                <h1 class="app-title">taskly</h1>
+                <p class="subtitle">Clarity meets creativity through planning</p>
+
+                <h2>Create an account</h2>
+                <p class="tagline">Start organizing your day!</p>
+
+                <form id="registerForm" class="register-form">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="fullname" placeholder="Enter your name" required>
+
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+                    <label for="confirm-password">Confirm password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+
+                    <button type="submit" class="btn">Create account</button>
+                </form>
+
+                <p class="signin-text">
+                    Already have an account? <a href="login.html">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+
+        registerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fullname = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!fullname || !email || !password || !confirmPassword) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match. Please try again.');
+                return;
+            }
+
+            const user = {
+                fullname: fullname,
+                email: email,
+                password: password
+            };
+            localStorage.setItem('tasklyUser', JSON.stringify(user));
+
+            alert('🎉 Account created successfully!');
+
+            registerForm.reset();
+        });
+    </script>
+</body>
+</html>
