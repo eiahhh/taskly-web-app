@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Create Account</title>
+    <link rel="stylesheet" href="/Style/register.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <img src="/assets/bgImage2.png" alt="Background" class="background-img">
+            <div class="overlay-text">
+                <h1>Organize Your Life</h1>
+                <p>Simple, Seamless, Smart</p>
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="form-container">
+                <img src="/assets/logo.png" alt="Taskly Logo" class="logo">
+                <h1 class="app-title">taskly</h1>
+                <p class="subtitle">Clarity meets creativity through planning</p>
+
+                <h2>Create an account</h2>
+                <p class="tagline">Start organizing your day!</p>
+
+                <form id="registerForm" class="register-form">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" name="fullname" placeholder="Enter your name" required>
+
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+
+                    <label for="confirm-password">Confirm password</label>
+                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+
+                    <button type="submit" class="btn">Create account</button>
+                </form>
+
+                <p class="signin-text">
+                    Already have an account? <a href="/login">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Supabase from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        let supabase;
+        let authService;
+
+        // Initialize Supabase
+        async function initSupabase() {
+            try {
+                // Fetch config from server
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                // Create Supabase client
+                const { createClient } = window.supabase;
+                supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+                
+                // Initialize auth service
+                authService = {
+                    signUp: async (email, password, fullname) => {
+                        try {
+                            const { data, error } = await supabase.auth.signUp({
+                                email: email,
+                                password: password,
+                                options: {
+                                    data: {
+                                        full_name: fullname
+                                    }
+                                }
+                            });
+                            if (error) throw error;
+                            return { success: true, data };
+                        } catch (error) {
+                            return { success: false, error: error.message };
+                        }
+                    }
+                };
+                
+                console.log('✅ Supabase initialized');
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+            }
+        }
+
+        // Handle register form submission
+        const registerForm = document.getElementById('registerForm');
+
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const fullname = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!fullname || !email || !password || !confirmPassword) {
+                alert('Please fill out all fields.');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                alert('Passwords do not match. Please try again.');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = registerForm.querySelector('.btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Creating account...';
+            submitBtn.disabled = true;
+
+            try {
+                // Sign up with Supabase
+                const result = await authService.signUp(email, password, fullname);
+
+                if (result.success) {
+                    alert('🎉 Account created successfully! Please check your email to verify your account.');
+                    registerForm.reset();
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                } else {
+                    alert(`❌ ${result.error}`);
+                }
+            } catch (error) {
+                alert('❌ An error occurred. Please try again.');
+                console.error(error);
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize on page load
+        initSupabase();
+    </script>
+</body>
+</html>
