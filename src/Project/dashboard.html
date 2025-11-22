@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, <span id="userName">Loading...</span></h1>
+    <p>You are logged in!</p>
+    <button id="logoutBtn">Logout</button>
+
+    <!-- Load Supabase from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        let supabase;
+
+        // Initialize Supabase
+        async function initSupabase() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                const { createClient } = window.supabase;
+                supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+                
+                console.log('✅ Supabase initialized');
+                
+                // Check if user is logged in
+                await checkAuth();
+            } catch (error) {
+                console.error('❌ Failed to initialize Supabase:', error);
+            }
+        }
+
+        // Check authentication
+        async function checkAuth() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    // Not logged in, redirect to login
+                    alert('Please log in to access the dashboard');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // Display user info
+                const user = session.user;
+                const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
+                document.getElementById('userName').textContent = fullName;
+                
+            } catch (error) {
+                console.error('Auth error:', error);
+                window.location.href = '/login';
+            }
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                alert('✅ Logged out successfully');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('❌ Error logging out');
+            }
+        });
+
+        // Initialize on page load
+        initSupabase();
+    </script>
+</body>
+</html>
