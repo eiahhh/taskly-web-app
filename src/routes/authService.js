@@ -89,6 +89,45 @@ class AuthService {
   }
 }
 
+// NEW: Update profile 
+    async updateProfile({ full_name, nickname, mobile_number, bio }) {
+        try {
+            const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+            if (userError) throw userError;
+
+            const { data, error } = await this.supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    full_name,
+                    nickname,
+                    mobile_number,
+                    bio,
+                    updated_at: new Date()
+                });
+
+            if (error) throw error;
+
+            return { success: true, data };
+        } catch (error) {
+            console.error('Update profile error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // NEW: Change user password
+    async changePassword(newPassword) {
+        try {
+            const { error } = await this.supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error('Change password error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+}
+
 // Export for use in HTML files
 if (typeof window !== 'undefined') {
   window.AuthService = AuthService;
