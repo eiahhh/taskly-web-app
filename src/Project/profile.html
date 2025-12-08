@@ -4,54 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taskly | Profile</title>
-    <link rel="stylesheet" href="public/Style/profile.css">
+    <link rel="stylesheet" href="/Style/profile.css">
+
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 
 <body>
-<div class="container">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="logo">taskly</div>
+<aside class="sidebar">
+    <h1 class="logo">taskly</h1>
 
-        <nav class="nav-menu">
-            <a href="dashboard.html" class="nav-item">
-                <span class="icon">〰️</span>
-                <span>Dashboard</span>
-            </a>
+    <nav class="menu">
+        <a href="/dashboard" class="menu-item">
+            <i class="ri-dashboard-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/tasks" class="menu-item">
+            <i class="ri-task-line"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="/ai-assistant" class="menu-item">
+            <i class="ri-robot-line"></i>
+            <span>AI Assistant</span>
+        </a>
+    </nav>
 
-            <a href="tasks.html" class="nav-item">
-                <span class="icon">📝</span>
-                <span>Task</span>
-            </a>
-
-            <a href="aiAssistant.html" class="nav-item">
-                <span class="icon">🤖</span>
-                <span>AI Assistant</span>
-            </a>
-        </nav>
-
-        <div class="user-profile-sidebar">
-            <div class="user-avatar-small" id="sidebarAvatar">BM</div>
-            <div class="user-info-small">
-                <div class="user-name-small" id="sidebarName">User Name</div>
+    <a href="/profile" class="profile-link">
+        <div class="profile">
+            <i class="ri-user-line profile-icon" id="sidebarAvatar"></i>
+            <div>
+                <p class="name" id="sidebarName">Loading...</p>
+                <p class="sub">Your Profile</p>
             </div>
         </div>
-    </aside>
+    </a>
+    
+    <div class="logout">
+        <button id="logoutBtn" class="edit-profile-btn" style="width:100%;">Logout</button>
+    </div>
+</aside>
 
-    <!-- MAIN CONTENT -->
     <main class="main-content">
 
-        <header class="top-bar">
-            <h1 class="page-title">My Profile</h1>
-            <div class="header-actions">
-                <button class="icon-btn" id="notificationBtn">🔔</button>
-                <button class="icon-btn" id="settingsBtn">⚙️</button>
-            </div>
-        </header>
+        <div class="header">
+        <div class="header-left">
+            <h1>My Profile</h1>
+            <p>Manage your account settings and preferences</p>
+        </div>
+        <div class="header-right">
+            <button class="btn-icon">
+                <i class="ri-notification-line"></i>
+            </button>
+            <button class="btn-icon">
+                <i class="ri-settings-3-line"></i>
+            </button>
+        </div>
+    </div>
 
-        <p class="page-subtitle">Manage your account settings and preferences</p>
-
-        <!-- PROFILE HEADER -->
         <div class="profile-header">
             <div class="profile-left">
                 <div class="profile-avatar" id="profileAvatar">UN</div>
@@ -74,10 +82,8 @@
             </div>
         </div>
 
-        <!-- PROFILE CONTENT -->
         <div class="content-grid">
 
-            <!-- PERSONAL INFORMATION -->
             <div class="card">
                 <h3 class="card-title">Personal Information</h3>
 
@@ -109,7 +115,6 @@
                 </div>
             </div>
 
-            <!-- SECURITY -->
             <div class="card">
                 <h3 class="card-title">Security</h3>
 
@@ -118,7 +123,7 @@
                         <div class="security-label">Password</div>
                         <div class="security-meta">Keep account secure</div>
                     </div>
-                    <button id="changePasswordBtn" class="edit-profile-btn" style="padding:5px 10px;">Change password</button>
+                    <button id="changePasswordBtn" class="edit-profile-btn" style="padding:10px 22px;">Change password</button>
                 </div>
 
                 <div class="security-item">
@@ -136,14 +141,12 @@
                     
         </div>
     </main>
-</div>
 
-<!-- PASSWORD MODAL -->
 <div id="passwordModal" class="modal">
     <div class="modal-content">
         <h2>Change Password</h2>
 
-        <label>Current Password</label>
+        <label>New Password</label>
         <input type="password" id="newPass">
 
         <label>Confirm New Password</label>
@@ -160,6 +163,7 @@
 
 <script>
     let supabase;
+    let currentUser = null;
 
     async function initSupabase() {
         try {
@@ -169,47 +173,64 @@
             const { createClient } = window.supabase;
             supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
 
-            console.log("✔ Supabase Initialized");
-
-            loadUserProfile();
+            console.log("✅ Supabase Initialized");
+            await loadUserProfile();
         } catch (err) {
-            console.error("Supabase init failed:", err);
+            console.error("❌ Supabase init failed:", err);
+            // If API config fails, check if environment variables are set
+            alert('Failed to connect to database. Please check your configuration.');
         }
     }
 
     // Load Profile Data
     async function loadUserProfile() {
-        const { data: { user } } = await supabase.auth.getUser();
+        // 1. Get the authenticated user from Supabase Auth (System A)
+        const { data: { user }, error } = await supabase.auth.getUser();
 
-        if (!user) {
+        if (error || !user) {
+            console.error('Not authenticated:', error);
             window.location.href = "/login";
             return;
         }
 
-        // Fill email
+        currentUser = user;
+        console.log('✅ Current user ID:', currentUser.id);
+
+        // Fill email (This comes from Auth, not the profile table)
         document.getElementById("email").value = user.email;
         document.getElementById("profileEmail").textContent = "📧 " + user.email;
 
-        // Load profile data from table
-        const { data, error } = await supabase
-            .from("profiles")
+        // Format joined date
+        const joinedDate = new Date(user.created_at).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        document.getElementById("profileJoined").textContent = "📅 Joined " + joinedDate;
+
+        // 2. Load profile data from 'user_profiles' table (System B)
+        // We query by user_id, which matches the Auth UUID
+        const { data, error: profileError } = await supabase
+            .from("user_profiles") 
             .select("*")
-            .eq("id", user.id)
+            .eq("user_id", user.id) 
             .single();
 
-        if (error) {
-            console.warn("No profile row yet, creating one...");
+        if (profileError) {
+            console.warn("No profile row yet, using default values");
+            const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
+            updateProfileUI(displayName, user.email);
             return;
         }
 
-        // Assign values
+        // Assign values from database
         document.getElementById("fullName").value = data.full_name || "";
         document.getElementById("nickname").value = data.nickname || "";
         document.getElementById("mobileNumber").value = data.mobile_number || "";
         document.getElementById("bio").value = data.bio || "";
 
-        // Header + Sidebar
-        updateProfileUI(data.full_name, user.email);
+        // Update UI
+        updateProfileUI(data.full_name || user.email.split('@')[0], user.email);
     }
 
     // Update UI (Avatar, Name)
@@ -219,11 +240,24 @@
             : "UN";
 
         document.getElementById("profileAvatar").textContent = initials;
-        document.getElementById("sidebarAvatar").textContent = initials;
-
         document.getElementById("profileName").textContent = fullName || "User Name";
         document.getElementById("sidebarName").textContent = fullName || "User Name";
+        document.getElementById("profileEmail").textContent = "📧 " + (email || "user@email.com");
     }
+
+    // LOGOUT FUNCTIONALITY
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error('Logout error:', error);
+            alert('Failed to logout. Please try again.');
+            return;
+        }
+        
+        console.log('✅ User logged out');
+        window.location.href = '/login';
+    });
 
     // BUTTONS
     const editBtn = document.getElementById("editProfileBtn");
@@ -231,7 +265,7 @@
     const cancelBtn = document.getElementById("cancelBtn");
 
     // INPUT FIELDS
-    const fields = ["fullName", "nickname", "email", "mobileNumber", "bio"]
+    const fields = ["fullName", "nickname", "mobileNumber", "bio"]
         .map(id => document.getElementById(id));
 
     let originalValues = {};
@@ -252,42 +286,59 @@
 
     // SAVE PROFILE TO SUPABASE
     saveBtn.addEventListener("click", async () => {
-        const { data: { user } } = await supabase.auth.getUser();
+        if (!currentUser) {
+            alert("You must be logged in to save changes.");
+            return;
+        }
 
         const fullName = document.getElementById("fullName").value.trim();
         const nickname = document.getElementById("nickname").value.trim();
         const mobile = document.getElementById("mobileNumber").value.trim();
         const bio = document.getElementById("bio").value.trim();
 
-        const { error } = await supabase
-            .from("profiles")
-            .upsert({
-                id: user.id,
+        // Disable button during save
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+
+        try {
+            const updates = {
+                user_id: currentUser.id, // This links the profile to the Auth User UUID
                 full_name: fullName,
                 nickname: nickname,
                 mobile_number: mobile,
                 bio: bio,
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabase
+                .from("user_profiles") // UPDATED TABLE NAME
+                .upsert(updates, { onConflict: 'user_id' }); // Conflict checks user_id
+
+            if (error) {
+                throw error;
+            }
+
+            console.log('✅ Profile updated successfully');
+            updateProfileUI(fullName, currentUser.email);
+
+            // Reset fields to readonly
+            fields.forEach(f => {
+                f.setAttribute("readonly", true);
+                f.style.backgroundColor = "#fafafa";
             });
 
-        if (error) {
-            alert("❌ Failed to save profile.");
-            console.error(error);
-            return;
+            editBtn.style.display = "inline-block";
+            saveBtn.style.display = "none";
+            cancelBtn.style.display = "none";
+
+            alert("✅ Profile updated successfully!");
+        } catch (err) {
+            console.error('Save error:', err);
+            alert("❌ Failed to save profile: " + err.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save";
         }
-
-        updateProfileUI(fullName, user.email);
-
-        fields.forEach(f => {
-            f.setAttribute("readonly", true);
-            f.style.backgroundColor = "#fafafa";
-        });
-
-        editBtn.style.display = "inline-block";
-        saveBtn.style.display = "none";
-        cancelBtn.style.display = "none";
-
-        alert("✔ Profile updated successfully!");
     });
 
     // CANCEL EDIT
@@ -303,34 +354,64 @@
         cancelBtn.style.display = "none";
     });
 
-    // PASSWORD MODAL (unchanged)
+    // PASSWORD MODAL
     const modal = document.getElementById("passwordModal");
     const changeBtn = document.getElementById("changePasswordBtn");
     const closeModal = document.getElementById("closeModal");
 
     changeBtn.onclick = () => modal.style.display = "flex";
-    closeModal.onclick = () => modal.style.display = "none";
+    closeModal.onclick = () => {
+        modal.style.display = "none";
+        document.getElementById("newPass").value = "";
+        document.getElementById("confirmPass").value = "";
+    };
 
     document.getElementById("savePassword").onclick = async () => {
         const newPass = document.getElementById("newPass").value;
         const confirmPass = document.getElementById("confirmPass").value;
+
+        if (!newPass || !confirmPass) {
+            alert("Please fill in both password fields.");
+            return;
+        }
+
+        if (newPass.length < 6) {
+            alert("Password must be at least 6 characters long.");
+            return;
+        }
 
         if (newPass !== confirmPass) {
             alert("Passwords do not match!");
             return;
         }
 
-        const { error } = await supabase.auth.updateUser({ password: newPass });
+        const savePasswordBtn = document.getElementById("savePassword");
+        savePasswordBtn.disabled = true;
+        savePasswordBtn.textContent = "Updating...";
 
-        if (error) return alert("Failed to update password.");
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPass });
 
-        alert("Password updated!");
-        modal.style.display = "none";
-    }
+            if (error) {
+                throw error;
+            }
 
+            alert("✅ Password updated successfully!");
+            modal.style.display = "none";
+            document.getElementById("newPass").value = "";
+            document.getElementById("confirmPass").value = "";
+        } catch (err) {
+            console.error('Password update error:', err);
+            alert("❌ Failed to update password: " + err.message);
+        } finally {
+            savePasswordBtn.disabled = false;
+            savePasswordBtn.textContent = "Save";
+        }
+    };
+
+    // Initialize on page load
     initSupabase();
 </script>
 
 </body>
 </html>
-
