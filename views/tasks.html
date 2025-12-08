@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Tasks</title>
+
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Your Style -->
+    <link rel="stylesheet" href="/Style/style-tasks.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <h1 class="logo">taskly</h1>
+
+    <nav class="menu">
+        <a href="/dashboard" class="menu-item">
+            <i class="ri-dashboard-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/calendar" class="menu-item">
+            <i class="ri-calendar-line"></i>
+            <span>Calendar</span>
+        </a>
+        <a href="/pomodoro" class="menu-item">
+            <i class="ri-time-line"></i>
+            <span>Pomodoro Timer</span>
+        </a>
+        <a href="/tasks" class="menu-item active">
+            <i class="ri-task-line"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="/ai-assistant" class="menu-item">
+            <i class="ri-robot-line"></i>
+            <span>AI Assistant</span>
+        </a>
+    </nav>
+
+    <div class="profile">
+        <i class="ri-user-line profile-icon"></i>
+        <div>
+            <p class="name" id="user-name">Belle Mariano</p>
+            <p class="sub">Your Profile</p>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <h1>Tasks</h1>
+            <p>Manage and organize your daily tasks</p>
+        </div>
+        <div class="header-right">
+            <button class="btn-icon">
+                <i class="ri-notification-line"></i>
+            </button>
+            <button class="btn-icon">
+                <i class="ri-settings-3-line"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Actions Bar -->
+    <div class="actions-bar">
+        <div class="search-box">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search-input" placeholder="Search Tasks...">
+        </div>
+        <button class="btn-new-event">
+            <i class="ri-add-line"></i>
+            + New Event
+        </button>
+    </div>
+
+    <!-- Filter and Sort -->
+    <div class="filter-bar">
+        <button class="filter-btn">
+            <i class="ri-filter-line"></i>
+            Filter
+        </button>
+        <div class="sort-dropdown">
+            <button class="sort-btn">
+                Sort by: Due Date
+                <i class="ri-arrow-down-s-line"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Today's Tasks Section -->
+    <div class="tasks-section">
+        <div class="section-header">
+            <h2>Today's Task</h2>
+            <span class="task-count">3 tasks</span>
+        </div>
+
+        <div class="task-list">
+            <!-- Task Card 1 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Card 2 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Card 3 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks Section -->
+    <div class="tasks-section">
+        <div class="section-header">
+            <h2>Upcoming Tasks</h2>
+            <span class="task-count">3 tasks</span>
+        </div>
+
+        <div class="task-list">
+            <!-- Task Card 1 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Card 2 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Card 3 -->
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox">
+                    <div class="task-info">
+                        <h3 class="task-title">Complete Project Proposal</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                Today, 2:00 PM
+                            </span>
+                            <span class="task-category school">
+                                <i class="ri-bookmark-line"></i>
+                                School
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge high">High</span>
+                    <button class="btn-menu">
+                        <i class="ri-more-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="/js/tasks.js"></script>
+
+</body>
+</html>
