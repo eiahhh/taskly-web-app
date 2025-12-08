@@ -1,6 +1,3 @@
-// This file will be loaded in the browser via CDN
-// Create this as a standalone module that can work with Supabase CDN
-
 class AuthService {
   constructor(supabaseClient) {
     this.supabase = supabaseClient;
@@ -87,7 +84,45 @@ class AuthService {
     const { data: { session } } = await this.supabase.auth.getSession();
     return !!session;
   }
-}
+
+  // Update profile 
+  async updateProfile({ full_name, nickname, mobile_number, bio }) {
+    try {
+      const { data: { user }, error: userError } = await this.supabase.auth.getUser();
+      if (userError) throw userError;
+
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name,
+          nickname,
+          mobile_number,
+          bio,
+          updated_at: new Date()
+        });
+
+      if (error) throw error;
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Update profile error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Change user password
+  async changePassword(newPassword) {
+    try {
+      const { error } = await this.supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Change password error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+} // <- Class ends here
 
 // Export for use in HTML files
 if (typeof window !== 'undefined') {

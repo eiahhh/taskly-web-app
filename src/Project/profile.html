@@ -156,7 +156,74 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
+    let supabase;
+
+    async function initSupabase() {
+        try {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+
+            const { createClient } = window.supabase;
+            supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+
+            console.log("✔ Supabase Initialized");
+
+            loadUserProfile();
+        } catch (err) {
+            console.error("Supabase init failed:", err);
+        }
+    }
+
+    // Load Profile Data
+    async function loadUserProfile() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            window.location.href = "/login";
+            return;
+        }
+
+        // Fill email
+        document.getElementById("email").value = user.email;
+        document.getElementById("profileEmail").textContent = "📧 " + user.email;
+
+        // Load profile data from table
+        const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+        if (error) {
+            console.warn("No profile row yet, creating one...");
+            return;
+        }
+
+        // Assign values
+        document.getElementById("fullName").value = data.full_name || "";
+        document.getElementById("nickname").value = data.nickname || "";
+        document.getElementById("mobileNumber").value = data.mobile_number || "";
+        document.getElementById("bio").value = data.bio || "";
+
+        // Header + Sidebar
+        updateProfileUI(data.full_name, user.email);
+    }
+
+    // Update UI (Avatar, Name)
+    function updateProfileUI(fullName, email) {
+        const initials = fullName
+            ? fullName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2)
+            : "UN";
+
+        document.getElementById("profileAvatar").textContent = initials;
+        document.getElementById("sidebarAvatar").textContent = initials;
+
+        document.getElementById("profileName").textContent = fullName || "User Name";
+        document.getElementById("sidebarName").textContent = fullName || "User Name";
+    }
 
     // BUTTONS
     const editBtn = document.getElementById("editProfileBtn");
@@ -164,12 +231,12 @@
     const cancelBtn = document.getElementById("cancelBtn");
 
     // INPUT FIELDS
-    const fields = ["fullName", "nickname", "email", "mobileNumber", "bio"].map(id => document.getElementById(id)
-    );
+    const fields = ["fullName", "nickname", "email", "mobileNumber", "bio"]
+        .map(id => document.getElementById(id));
 
     let originalValues = {};
 
-    // EDIT PROFILE
+    // EDIT MODE
     editBtn.addEventListener("click", () => {
         originalValues = {};
         fields.forEach(f => {
@@ -183,44 +250,50 @@
         cancelBtn.style.display = "inline-block";
     });
 
-    // SAVE CHANGES
-    saveBtn.addEventListener("click", () => {
+    // SAVE PROFILE TO SUPABASE
+    saveBtn.addEventListener("click", async () => {
+        const { data: { user } } = await supabase.auth.getUser();
 
-        // Disable fields again
+        const fullName = document.getElementById("fullName").value.trim();
+        const nickname = document.getElementById("nickname").value.trim();
+        const mobile = document.getElementById("mobileNumber").value.trim();
+        const bio = document.getElementById("bio").value.trim();
+
+        const { error } = await supabase
+            .from("profiles")
+            .upsert({
+                id: user.id,
+                full_name: fullName,
+                nickname: nickname,
+                mobile_number: mobile,
+                bio: bio,
+                updated_at: new Date()
+            });
+
+        if (error) {
+            alert("❌ Failed to save profile.");
+            console.error(error);
+            return;
+        }
+
+        updateProfileUI(fullName, user.email);
+
         fields.forEach(f => {
             f.setAttribute("readonly", true);
             f.style.backgroundColor = "#fafafa";
         });
 
-        // update values
-        const newName = document.getElementById("fullName").value.trim();
-        const newNickname = document.getElementById("nickname").value.trim();
-        const newEmail = document.getElementById("email").value.trim();
-
-        // Update profile header
-        document.getElementById("profileName").textContent = newName || "User Name";
-        document.getElementById("profileEmail").textContent = `📧 ${newEmail || "user@email.com"}`;
-
-        // Update sidebar
-        document.getElementById("sidebarName").textContent = newName || "User Name";
-
-        // intials
-        const initials = newName ? newName.split(" ").map(w => w[0].toUpperCase()).join("").slice(0, 2) : "UN";
-
-        document.getElementById("sidebarAvatar").textContent = initials;
-        document.getElementById("profileAvatar").textContent = initials;
-        
         editBtn.style.display = "inline-block";
         saveBtn.style.display = "none";
         cancelBtn.style.display = "none";
 
-        alert("Profile updated successfully!");
+        alert("✔ Profile updated successfully!");
     });
 
-    // CANCEL CHANGES
+    // CANCEL EDIT
     cancelBtn.addEventListener("click", () => {
         fields.forEach(f => {
-            f.value = originalValues[f.id];  // Restore old value
+            f.value = originalValues[f.id];
             f.setAttribute("readonly", true);
             f.style.backgroundColor = "#fafafa";
         });
@@ -230,7 +303,7 @@
         cancelBtn.style.display = "none";
     });
 
-    // PASSWORD MODAL
+    // PASSWORD MODAL (unchanged)
     const modal = document.getElementById("passwordModal");
     const changeBtn = document.getElementById("changePasswordBtn");
     const closeModal = document.getElementById("closeModal");
@@ -238,12 +311,26 @@
     changeBtn.onclick = () => modal.style.display = "flex";
     closeModal.onclick = () => modal.style.display = "none";
 
-    document.getElementById("savePassword").onclick = () => {
+    document.getElementById("savePassword").onclick = async () => {
+        const newPass = document.getElementById("newPass").value;
+        const confirmPass = document.getElementById("confirmPass").value;
+
+        if (newPass !== confirmPass) {
+            alert("Passwords do not match!");
+            return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password: newPass });
+
+        if (error) return alert("Failed to update password.");
+
         alert("Password updated!");
         modal.style.display = "none";
     }
 
+    initSupabase();
 </script>
+
 </body>
 </html>
 
