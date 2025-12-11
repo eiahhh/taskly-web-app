@@ -1,78 +1,534 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taskly - Dashboard</title>
+    <title>Taskly Dashboard</title>
+
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Your Style -->
+    <link rel="stylesheet" href="/Style/style-dashboard.css" />
 </head>
 <body>
-    <h1>Welcome, <span id="userName">Loading...</span></h1>
-    <p>You are logged in!</p>
-    <button id="logoutBtn">Logout</button>
 
-    <!-- Load Supabase from CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        let supabase;
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <h1 class="logo">taskly</h1>
 
-        // Initialize Supabase
-        async function initSupabase() {
-            try {
-                const response = await fetch('/api/config');
-                const config = await response.json();
-                
-                const { createClient } = window.supabase;
-                supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
-                
-                console.log('✅ Supabase initialized');
-                
-                // Check if user is logged in
-                await checkAuth();
-            } catch (error) {
-                console.error('❌ Failed to initialize Supabase:', error);
+    <nav class="menu">
+        <a href="/dashboard" class="menu-item active">Dashboard</a>
+        <a href="/tasks" class="menu-item">Tasks</a>
+        <a href="/ai-assistant" class="menu-item">AI Assistant</a>
+        <a href="/profile" class="menu-item">Profile</a>
+    </nav>
+
+    <div class="profile">
+        <i class="ri-user-line profile-icon"></i>
+        <div>
+            <p class="name" id="user-name">Belle Mariano</p>
+            <p class="sub">Your Profile</p>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Dashboard</h1>
+        <p id="welcome-message">Welcome back, here's your tasks overview</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-container">
+
+        <div class="card">
+            <i class="ri-check-double-line card-icon"></i>
+            <h2 id="stat-completed">0</h2>
+            <p>Task Completed</p>
+        </div>
+
+        <div class="card">
+            <i class="ri-time-line card-icon"></i>
+            <h2 id="stat-focus">0h</h2>
+            <p>Focus Time</p>
+        </div>
+
+        <div class="card">
+            <i class="ri-fire-line card-icon"></i>
+            <h2 id="stat-streak">0</h2>
+            <p>Day Streak</p>
+        </div>
+
+        <div class="card">
+            <i class="ri-stack-line card-icon"></i>
+            <h2 id="stat-productivity">0%</h2>
+            <p>Productivity</p>
+        </div>
+
+    </div>
+
+    <!-- Add Task -->
+    <div class="add-task-container">
+        <p class="add-title">Add Task</p>
+
+        <div class="add-box" style="display: flex; gap: 10px; align-items: center;">
+            <input id="task-input" type="text" placeholder="Add to your task" style="flex: 1;">
+            <select id="priority-select" style="padding: 10px; border-radius: 5px; border: 1px solid #ddd; font-size: 14px; background: white; cursor: pointer; min-width: 140px;">
+                <option value="Low">Low Priority</option>
+                <option value="Medium" selected>Medium Priority</option>
+                <option value="High">High Priority</option>
+                <option value="Urgent">Urgent</option>
+            </select>
+            <button class="add-btn">+</button>
+        </div>
+    </div>
+
+    <!-- Today + Activity -->
+    <div class="grid">
+
+        <!-- TODAY'S TASKS -->
+        <div class="today-task">
+            <div class="task-header">
+                <p>Today's Task</p>
+                <p id="task-counter">0 out of 0 completed</p>
+            </div>
+
+            <div class="task-list">
+                <p style="text-align: center; color: #999; padding: 20px;">Loading tasks...</p>
+            </div>
+        </div>
+
+        <!-- RECENT ACTIVITY -->
+        <div class="activity-card">
+            <h3>Recent Activity</h3>
+            <ul id="activity-list">
+                <li style="text-align: center; color: #999;">Loading activity...</li>
+            </ul>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    let supabase;
+    let currentUser = null;
+
+    // Initialize Supabase
+    async function initSupabase() {
+        try {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            const { createClient } = window.supabase;
+            supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+            
+            console.log('✅ Supabase initialized');
+            
+            // Check authentication
+            await checkAuth();
+        } catch (error) {
+            console.error('❌ Failed to initialize:', error);
+            alert('Failed to connect to database. Please refresh the page.');
+        }
+    }
+
+    // Check if user is authenticated
+    async function checkAuth() {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+            console.error('Not authenticated:', error);
+            window.location.href = '/login';
+            return;
+        }
+        
+        currentUser = user;
+        console.log('✅ Current user:', currentUser);
+        
+        const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
+        document.getElementById('user-name').textContent = displayName;
+        document.getElementById('welcome-message').textContent = `Welcome back ${displayName}, here's your tasks overview`;
+        
+        // Initialize user statistics if they don't exist
+        await ensureUserStatistics();
+        
+        // Load dashboard data
+        await loadDashboard();
+    }
+
+    // Ensure user has statistics record
+    async function ensureUserStatistics() {
+        const { data, error } = await supabase
+            .from("user_statistics")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .single();
+
+        if (error && error.code === 'PGRST116') {
+            // Record doesn't exist, create it
+            const { error: insertError } = await supabase
+                .from("user_statistics")
+                .insert({
+                    user_id: currentUser.id,
+                    tasks_completed_total: 0,
+                    focus_time_minutes: 0,
+                    current_streak_days: 0,
+                    longest_streak_days: 0
+                });
+            
+            if (insertError) {
+                console.error('Error creating user statistics:', insertError);
+            } else {
+                console.log('✅ User statistics created');
             }
         }
+    }
 
-        // Check authentication
-        async function checkAuth() {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (!session) {
-                    // Not logged in, redirect to login
-                    alert('Please log in to access the dashboard');
-                    window.location.href = '/login';
+    // Load all dashboard data
+    async function loadDashboard() {
+        await Promise.all([
+            loadTasks(),
+            loadStatistics(),
+            loadRecentActivity()
+        ]);
+    }
+
+    // ===============================
+    // LOAD TASKS - ONLY INCOMPLETE
+    // ===============================
+    async function loadTasks() {
+        const taskList = document.querySelector(".task-list");
+        taskList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>Loading tasks...</p>";
+
+        // CRITICAL: Only fetch incomplete tasks
+        const { data, error } = await supabase
+            .from("tasks")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .eq("completed", false)  // THIS FILTERS OUT COMPLETED TASKS
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error('Error loading tasks:', error);
+            taskList.innerHTML = "<p style='text-align: center; color: #e74c3c; padding: 20px;'>Error loading tasks. Please refresh.</p>";
+            return;
+        }
+
+        console.log('✅ Incomplete tasks loaded:', data);
+        console.log('📊 Number of incomplete tasks:', data?.length || 0);
+        
+        renderTasks(data || []);
+        updateTaskCounter(data || []);
+    }
+
+    // ===============================
+    // RENDER TASKS IN UI
+    // ===============================
+    function renderTasks(tasks) {
+        const taskList = document.querySelector(".task-list");
+        taskList.innerHTML = "";
+
+        console.log('🎨 Rendering tasks:', tasks.length);
+
+        if (tasks.length === 0) {
+            taskList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No pending tasks! Great job! 🎉</p>";
+            return;
+        }
+
+        tasks.forEach(task => {
+            const item = document.createElement("label");
+            item.style.display = "flex";
+            item.style.alignItems = "center";
+            item.style.padding = "12px";
+            item.style.borderBottom = "1px solid #eee";
+            item.style.cursor = "pointer";
+            item.style.transition = "background 0.2s";
+            
+            item.onmouseenter = () => item.style.background = "#f8f9fa";
+            item.onmouseleave = () => item.style.background = "transparent";
+
+            const priorityColors = {
+                'Low': '#95a5a6',
+                'Medium': '#3498db',
+                'High': '#f39c12',
+                'Urgent': '#e74c3c'
+            };
+
+            item.innerHTML = `
+                <input type="checkbox" data-id="${task.id}" style="margin-right: 12px; cursor: pointer; width: 18px; height: 18px;">
+                <span style="flex: 1;">${escapeHtml(task.title)}</span>
+                <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${priorityColors[task.priority]}; color: white; margin-right: 8px;">${task.priority}</span>
+            `;
+
+            taskList.appendChild(item);
+        });
+
+        attachTaskListeners();
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ===============================
+    // ATTACH EVENT LISTENERS
+    // ===============================
+    function attachTaskListeners() {
+        // Checkbox listeners
+        document.querySelectorAll(".task-list input[type='checkbox']").forEach(checkbox => {
+            checkbox.addEventListener("change", async function (e) {
+                e.stopPropagation();
+                const id = this.getAttribute("data-id");
+                const isCompleted = this.checked;
+
+                console.log('✏️ Marking task as completed:', id);
+
+                const { error } = await supabase
+                    .from("tasks")
+                    .update({ 
+                        completed: isCompleted,
+                        completed_at: isCompleted ? new Date().toISOString() : null
+                    })
+                    .eq("id", id)
+                    .eq("user_id", currentUser.id);
+
+                if (error) {
+                    console.error('Error updating task:', error);
+                    this.checked = !this.checked;
+                    alert('Failed to update task. Please try again.');
                     return;
                 }
 
-                // Display user info
-                const user = session.user;
-                const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
-                document.getElementById('userName').textContent = fullName;
+                console.log('✅ Task marked as completed:', id);
                 
-            } catch (error) {
-                console.error('Auth error:', error);
-                window.location.href = '/login';
+                // Update statistics
+                await updateUserStatistics(isCompleted);
+                
+                // Reload dashboard - this will hide the completed task
+                await loadDashboard();
+            });
+        });
+    }
+
+    // ===============================
+    // UPDATE USER STATISTICS
+    // ===============================
+    async function updateUserStatistics(taskCompleted) {
+        if (!taskCompleted) return; // Only update when completing tasks
+
+        const { data: currentStats } = await supabase
+            .from("user_statistics")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .single();
+
+        if (currentStats) {
+            const { error } = await supabase
+                .from("user_statistics")
+                .update({
+                    tasks_completed_total: (currentStats.tasks_completed_total || 0) + 1,
+                    last_activity_date: new Date().toISOString().split('T')[0]
+                })
+                .eq("user_id", currentUser.id);
+
+            if (error) {
+                console.error('Error updating statistics:', error);
             }
         }
+    }
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) throw error;
-                
-                alert('✅ Logged out successfully');
-                window.location.href = '/login';
-            } catch (error) {
-                console.error('Logout error:', error);
-                alert('❌ Error logging out');
+    // ===============================
+    // ADD TASK
+    // ===============================
+    document.querySelector(".add-btn").addEventListener("click", async () => {
+        const title = document.getElementById("task-input").value.trim();
+        const priority = document.getElementById("priority-select").value;
+        
+        if (!title) {
+            alert("Task cannot be empty.");
+            return;
+        }
+
+        if (!currentUser) {
+            alert("You must be logged in to add tasks.");
+            window.location.href = '/login';
+            return;
+        }
+
+        const addBtn = document.querySelector(".add-btn");
+        addBtn.disabled = true;
+        addBtn.textContent = "...";
+
+        try {
+            console.log('Adding task for user:', currentUser.id, 'with priority:', priority);
+            
+            const { data, error } = await supabase
+                .from("tasks")
+                .insert([{
+                    user_id: currentUser.id,
+                    title: title,
+                    priority: priority,
+                    completed: false
+                }])
+                .select();
+
+            if (error) {
+                console.error('Supabase error:', error);
+                throw error;
             }
-        });
 
-        // Initialize on page load
-        initSupabase();
-    </script>
+            console.log('✅ Task added:', data);
+            document.getElementById("task-input").value = "";
+            document.getElementById("priority-select").value = "Medium";
+            await loadDashboard();
+        } catch (error) {
+            console.error('Error adding task:', error);
+            alert('Failed to add task: ' + error.message);
+        } finally {
+            addBtn.disabled = false;
+            addBtn.textContent = "+";
+        }
+    });
+
+    // Enter key to add task
+    document.getElementById("task-input").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            document.querySelector(".add-btn").click();
+        }
+    });
+
+    // ===============================
+    // LOAD STATISTICS
+    // ===============================
+    async function loadStatistics() {
+        // Get user statistics
+        const { data: stats, error: statsError } = await supabase
+            .from("user_statistics")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .single();
+
+        if (statsError) {
+            console.error('Error loading statistics:', statsError);
+        } else if (stats) {
+            document.getElementById('stat-completed').textContent = stats.tasks_completed_total || 0;
+            
+            const focusHours = Math.floor((stats.focus_time_minutes || 0) / 60);
+            const focusMinutes = (stats.focus_time_minutes || 0) % 60;
+            document.getElementById('stat-focus').textContent = focusHours > 0 ? `${focusHours}h ${focusMinutes}m` : `${focusMinutes}m`;
+            
+            document.getElementById('stat-streak').textContent = stats.current_streak_days || 0;
+        }
+
+        // Calculate today's productivity from tasks
+        const { data: allTasks, error: tasksError } = await supabase
+            .from("tasks")
+            .select("*")
+            .eq("user_id", currentUser.id);
+
+        if (!tasksError && allTasks) {
+            if (allTasks.length === 0) {
+                document.getElementById('stat-productivity').textContent = '0%';
+            } else {
+                const completed = allTasks.filter(t => t.completed).length;
+                const productivity = Math.round((completed / allTasks.length) * 100);
+                document.getElementById('stat-productivity').textContent = productivity + '%';
+            }
+        }
+    }
+
+    // ===============================
+    // UPDATE TASK COUNTER
+    // ===============================
+    function updateTaskCounter(tasks) {
+        const incomplete = tasks.length;
+        
+        // Get total completed tasks count
+        supabase
+            .from("tasks")
+            .select("*", { count: 'exact' })
+            .eq("user_id", currentUser.id)
+            .eq("completed", true)
+            .then(({ count }) => {
+                const completed = count || 0;
+                const total = completed + incomplete;
+                document.getElementById('task-counter').textContent = `${completed} out of ${total} completed`;
+            });
+    }
+
+    // ===============================
+    // LOAD RECENT ACTIVITY - ONLY 4
+    // ===============================
+    async function loadRecentActivity() {
+        // CRITICAL: Only fetch 4 most recent activities
+        const { data, error } = await supabase
+            .from("activity_log")
+            .select("*")
+            .eq("user_id", currentUser.id)
+            .order("created_at", { ascending: false })
+            .limit(4);  // THIS LIMITS TO 4 ACTIVITIES
+
+        const activityList = document.getElementById('activity-list');
+        activityList.innerHTML = "";
+
+        if (error) {
+            console.error('Error loading activity:', error);
+            activityList.innerHTML = '<li style="text-align: center; color: #999;">No activity yet</li>';
+            return;
+        }
+
+        console.log('✅ Recent activities loaded:', data?.length || 0);
+
+        if (!data || data.length === 0) {
+            activityList.innerHTML = '<li style="text-align: center; color: #999;">No activity yet. Start by adding tasks!</li>';
+            return;
+        }
+
+        data.forEach(activity => {
+            const li = document.createElement("li");
+            const dotColor = activity.activity_type === 'task_completed' ? 'green' : 
+                            activity.activity_type === 'task_deleted' ? 'red' : 'blue';
+            
+            const timeAgo = getTimeAgo(new Date(activity.created_at));
+            
+            li.innerHTML = `<span class="dot ${dotColor}"></span> ${escapeHtml(activity.description)} — <small>${timeAgo}</small>`;
+            activityList.appendChild(li);
+        });
+    }
+
+    // ===============================
+    // HELPER: TIME AGO
+    // ===============================
+    function getTimeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) {
+            const mins = Math.floor(seconds / 60);
+            return mins === 1 ? '1 minute ago' : `${mins} minutes ago`;
+        }
+        if (seconds < 86400) {
+            const hours = Math.floor(seconds / 3600);
+            return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+        }
+        const days = Math.floor(seconds / 86400);
+        return days === 1 ? '1 day ago' : `${days} days ago`;
+    }
+
+    // Initialize on page load
+    initSupabase();
+</script>
+
 </body>
 </html>

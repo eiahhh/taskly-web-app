@@ -5,8 +5,8 @@
 }
 
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background-color: #f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
 }
 
 .container {
@@ -14,103 +14,195 @@ body {
     height: 100vh;
 }
 
-/* Sidebar */
+/* ========== SIDEBAR ========== */
 .sidebar {
-    width: 200px;
-    background-color: #1a1a1a;
+    width: 240px;
+    background: #1a1a1a;
     color: white;
-    padding: 20px;
+    padding: 30px 20px;
     display: flex;
     flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
 }
 
 .logo {
-    font-size: 20px;
-    font-weight: bold;
+    font-size: 28px;
+    font-weight: 700;
     margin-bottom: 40px;
+    letter-spacing: -0.5px;
 }
 
-.nav-menu {
+.menu {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
     flex: 1;
 }
 
-.nav-item {
+.menu-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 12px;
-    color: #b0b0b0;
+    padding: 12px 16px;
+    color: white;
     text-decoration: none;
     border-radius: 8px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
+    font-size: 15px;
 }
 
-.nav-item:hover {
-    background-color:#2a2a2a;
-    color: white;
-}
-
-.nav-item.ai-assistant {
-    margin-top: 20px;
-}
-
-.nav-item .icon {
+.menu-item i {
     font-size: 20px;
 }
 
-.user-profile-sidebar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-top: 1px solid #333;
-    margin-top: auto;
-}
-
-.user-avatar-small {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: #444;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.user-info-small {
-    flex: 1;
-}
-
-.user-name-small {
-    font-size: 14px;
-    font-weight: 500;
+.menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
     color: white;
 }
 
-.user-role-small {
+.menu-item.active {
+    background-color: white;
+    font-weight: 500;
+    border-left: 4px solid #1a1a1a;
+    padding-left: 16px;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: white;
+    border-radius: 10px;
+    margin-top: auto;
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background: #cdcdcd;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #1a1a1a;
+}
+
+.profile .name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.profile .sub {
     font-size: 12px;
-    color: #888;
+    color: #1a1a1a;
+}
+
+.profile-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.profile-link:hover .profile {
+    background: #a0a0a0;
+}
+
+/* ========== LOGOUT ========== */
+.logout {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+.logout .edit-profile-btn {
+    background-color: #444;
+}
+
+.logout button {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* ========== HEADER ========== */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.header-left h1 {
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #1a1a1a;
+}
+
+.header-left p {
+    font-size: 16px;
+    color: #666;
+}
+
+.header-right {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-icon {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-icon:hover {
+    background: #f0f0f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 /* Main Content */
+.content-grid, 
+.profile-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
 .content-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 25px;
-    justify-content: center;
-    max-width: 900px;
-    margin: 0 auto;
+    align-items: stretch;
+}
+
+.info-card, .security-card {
+    background: #fff;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .main-content {
-    flex: 1;
-    padding: 30px 40px;
-    overflow-y: auto;
+    margin-left: 240px;
+    padding: 40px 50px;
+    min-height: 100vh;
 }
 
 .top-bar {
@@ -223,13 +315,13 @@ body {
 }
 
 .edit-profile-btn {
-    padding: 6px 14px;
+    padding: 12px 24px;
     background-color: #000;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 15px;
     transition: background-color 0.2s, transform 0.1s;
 }
 
@@ -239,32 +331,36 @@ body {
 
 .save-profile-btn,
 .cancel-profile-btn {
-    padding: 8px 18px;
+    padding: 12px 24px;
     background-color: #000;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     transition: background-color 0.2s;
 }
 
 .cancel-profile-btn {
-    background-color: #aaa;
+    background-color: #373737;
 }
 
 .cancel-profile-btn:hover {
-    background-color: #888;
+    background-color: #7a7979;
+}
+
+.save-profile-btn:hover {
+    background-color: #333;
 }
 
 .card {
     background: white;
     border-radius: 12px;
     padding: 30px;
-    align-items: center;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     height: 100%;
+    width: 100%;
 }
 
 .card-title {
@@ -442,7 +538,7 @@ input:checked + .toggle-slider:before {
     background: #fff;
     padding: 25px;
     width: 350px;
-    border-radius: 12px;
+    border-radius: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 

@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant</title>
+    <link rel="stylesheet" href="style-ai-assistant.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="layout">
+
+   <aside class="sidebar">
+    <h1 class="logo">taskly</h1>
+
+    <nav class="menu">
+        <a href="dashboard.html" class="menu-item">Dashboard</a>
+        <a href="tasks.html" class="menu-item">Tasks</a>
+        <a href="ai-assistant.html" class="menu-item active">AI Assistant</a>
+    </nav>
+
+    <div class="profile">
+    <i class="ri-user-line profile-icon"></i>
+    <div>
+        <p class="name">Belle Mariano</p>
+        <p class="sub">Your Profile</p>
+    </div>
+</div>
+</aside>
+
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+        <!-- Header -->
+        <header class="header">
+            <div>
+                <h2>AI Assistant</h2>
+                <p class="subtitle">Stay on top of your goals with AI precision</p>
+            </div>
+            <button class="settings-btn">⚙️</button>
+        </header>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <span>Quick Actions:</span>
+            <button>Schedule Meeting</button>
+            <button>Set Reminder</button>
+            <button>View Tasks</button>
+        </div>
+
+        <!-- CHAT + RIGHT PANEL -->
+        <div class="chat-section">
+
+            <!-- CHAT BOX -->
+            <div class="chat-container">
+
+                <div class="chat-box">
+
+                    <div class="msg ai-msg">
+                        <img class="avatar" src="ai.png">
+                        <div>
+                            <div class="bubble">
+                                Hello! How can I assist you today?
+                            </div>
+                            <p class="timestamp">AI Assistant • 3 minutes ago</p>
+                        </div>
+                    </div>
+
+                    <div class="msg user-msg">
+                        <div>
+                            <div class="bubble">
+                                Can you create a schedule for me?
+                            </div>
+                            <p class="timestamp">You • 2 minutes ago</p>
+                        </div>
+                        <img class="avatar" src="user.png">
+                    </div>
+
+                    <div class="msg ai-msg">
+                        <img class="avatar" src="ai.png">
+                        <div>
+                            <div class="bubble">
+                                Sure! What time would you like it to start?
+                            </div>
+                            <p class="timestamp">AI Assistant • Just now</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CHAT INPUT -->
+                <div class="chat-input">
+                    <input type="text" placeholder="Type your message">
+                    <button>🎤</button>
+                    <button>📎</button>
+                    <button>📤</button>
+                </div>
+
+            </div>
+
+            <!-- RIGHT INFO PANEL -->
+            <aside class="info-panel">
+
+                <div class="info-box">
+                    <h3>AI Assistant Info</h3>
+                </div>
+
+                <div class="info-box">
+                    <h3>What I can do</h3>
+
+                    <ul class="info-list">
+
+                        <li>
+                            <div class="icon"></div>
+                            <div>
+                                <p class="title"><strong>Smart Scheduling</strong></p>
+                                <p class="desc small">Find optimal meeting times based on availability</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <div class="icon"></div>
+                            <div>
+                                <p class="title"><strong>Reminders</strong></p>
+                                <p class="desc small">Set up notifications for important events</p>
+                            </div>
+                        </li>
+
+                        <li>
+                            <div class="icon"></div>
+                            <div>
+                                <p class="title"><strong>Analytics</strong></p>
+                                <p class="desc small">Insights on your scheduling patterns</p>
+                            </div>
+                        </li>
+
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h3>Recent Suggestions</h3>
+
+                    <div class="suggestion">
+                        <strong>Schedule daily meetings</strong>
+                        <span class="small">Every weekday at 1:00 PM</span>
+                    </div>
+
+                    <div class="suggestion">
+                        <strong>Schedule daily meetings</strong>
+                        <span class="small">Every weekday at 1:00 PM</span>
+                    </div>
+
+                    <div class="suggestion">
+                        <strong>Schedule daily meetings</strong>
+                        <span class="small">Every weekday at 1:00 PM</span>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>This week</h3>
+                    <div class="stats">
+                        <p>Events Scheduled <span>12</span></p>
+                        <p>Tasks Completed <span>12</span></p>
+                        <p>Free Hours <span>12</span></p>
+                    </div>
+                </div>
+
+            </aside>
+
+</div>
+</main>
+</div>
+
+
+<!-- ⭐⭐⭐ JAVASCRIPT FOR INTERACTIVITY ⭐⭐⭐ -->
+<script>
+// Elements
+const chatBox = document.querySelector('.chat-box');
+const input = document.querySelector('.chat-input input');
+const sendBtn = document.querySelector('.chat-input button:last-child');
+
+// ----------------------------
+// Add a message to the chat
+// ----------------------------
+function addMessage(text, sender = "user") {
+    const msg = document.createElement("div");
+    msg.classList.add("msg", sender === "user" ? "user-msg" : "ai-msg");
+
+    msg.innerHTML = sender === "user" 
+        ? `
+            <div>
+                <div class="bubble">${text}</div>
+                <p class="timestamp">You • Just now</p>
+            </div>
+            <img class="avatar" src="user.png">
+          `
+        : `
+            <img class="avatar" src="ai.png">
+            <div>
+                <div class="bubble">${text}</div>
+                <p class="timestamp">AI Assistant • Just now</p>
+            </div>
+          `;
+
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+// ----------------------------
+// Fake AI response
+// ----------------------------
+function fakeAiReply(userText) {
+    let reply;
+
+    if (userText.toLowerCase().includes("schedule")) {
+        reply = "Sure! What time should I schedule it?";
+    } else if (userText.toLowerCase().includes("reminder")) {
+        reply = "Okay! What would you like me to remind you about?";
+    } else if (userText.toLowerCase().includes("task")) {
+        reply = "Here are your upcoming tasks!";
+    } else {
+        reply = "Got it! Let me know if you'd like to schedule something or set a reminder.";
+    }
+
+    setTimeout(() => addMessage(reply, "ai"), 600);
+}
+
+// ----------------------------
+// Send message
+// ----------------------------
+function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    fakeAiReply(text);
+
+    input.value = "";
+}
+
+// ----------------------------
+// Event Listeners
+// ----------------------------
+sendBtn.addEventListener("click", sendMessage);
+
+input.addEventListener("keypress", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+// ----------------------------
+// Quick Action Buttons
+// ----------------------------
+document.querySelectorAll('.quick-actions button').forEach(btn => {
+    btn.addEventListener("click", () => {
+        const action = btn.textContent;
+        addMessage(action, "user");
+        fakeAiReply(action);
+    });
+});
+</script>
+
+
+</body>
+</html>
