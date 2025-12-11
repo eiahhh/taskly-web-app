@@ -32,6 +32,10 @@ app.get('/reset-password', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'Project', 'resetPassword.html'));
 });
 
+app.get('/update-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'updatePassword.html'));
+});
+
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'Project', 'dashboard.html'));
 });
