@@ -35,14 +35,12 @@
                     <label for="password">Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="password" name="password" placeholder="Enter password" required>
-                        <span class="toggle-password" onclick="togglePassword('password', this)">👁</span>
                     </div>
-
-                    <label for="confirm-password">Confirm password</label>
+                    
                     <div class="password-wrapper">
                         <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
-                        <span class="toggle-password" onclick="togglePassword('confirm-password', this)">👁</span>
                     </div>
+
 
                     <button type="submit" class="btn">Create account</button>
                 </form>
@@ -153,16 +151,23 @@
                 submitBtn.disabled = false;
             }
         });
-        function togglePassword(fieldId, toggleElement) {
-            const password = document.getElementById(fieldId);
-            if (password.type === "password") {
-                password.type = "text";
-                toggleElement.textContent = "🙈";
-            } else {
-                password.type = "password";
-                toggleElement.textContent = "👁";
-            }
+        function enableAutoReveal(inputId) {
+            const input = document.getElementById(inputId);
+            let timer;
+        
+            input.addEventListener("input", () => {
+                input.type = "text";   
+        
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    input.type = "password"; 
+                }, 1000); 
+            });
         }
+
+        enableAutoReveal("password");
+        enableAutoReveal("confirm-password");
+
 
         // Initialize on page load
         initSupabase();
