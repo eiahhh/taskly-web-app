@@ -30,7 +30,9 @@
                     <input type="email" id="email" name="email" placeholder="Enter email address" required>
 
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+                   <div class="password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Enter password" required>
+                    </div>
 
                     <div class="options">
                         <label>
@@ -39,16 +41,7 @@
                         </label>
                         <a href="/reset-password" class="forgot-link">Forgot password?</a>
                     </div>
-
                     <button type="submit" class="btn-primary">Sign in →</button>
-
-                    <div class="divider">
-                        <span>or continue with</span>
-                    </div>
-
-                    <button type="button" class="btn-google">
-                        <img src="/assets/googleIcon.png" alt="Google Icon" class="google-icon"> Google
-                    </button>
                 </form>
 
                 <p class="register-text">
@@ -137,6 +130,16 @@
                 submitBtn.disabled = false;
             }
         });
+         const passwordInput = document.getElementById("password");
+            let timeout;
+
+            passwordInput.addEventListener("input", function () {
+                passwordInput.type = "text";
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    passwordInput.type = "password";
+                }, 1000);
+            });
 
         // Initialize on page load
         initSupabase();
