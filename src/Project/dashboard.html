@@ -202,16 +202,18 @@
     }
 
     // ===============================
-    // LOAD TASKS
+    // LOAD TASKS - ONLY INCOMPLETE
     // ===============================
     async function loadTasks() {
         const taskList = document.querySelector(".task-list");
         taskList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>Loading tasks...</p>";
 
+        // CRITICAL: Only fetch incomplete tasks
         const { data, error } = await supabase
             .from("tasks")
             .select("*")
             .eq("user_id", currentUser.id)
+            .eq("completed", false)  // THIS FILTERS OUT COMPLETED TASKS
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -220,7 +222,9 @@
             return;
         }
 
-        console.log('✅ Tasks loaded:', data);
+        console.log('✅ Incomplete tasks loaded:', data);
+        console.log('📊 Number of incomplete tasks:', data?.length || 0);
+        
         renderTasks(data || []);
         updateTaskCounter(data || []);
     }
@@ -232,8 +236,10 @@
         const taskList = document.querySelector(".task-list");
         taskList.innerHTML = "";
 
+        console.log('🎨 Rendering tasks:', tasks.length);
+
         if (tasks.length === 0) {
-            taskList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No tasks yet. Add your first task above!</p>";
+            taskList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No pending tasks! Great job! 🎉</p>";
             return;
         }
 
@@ -257,8 +263,8 @@
             };
 
             item.innerHTML = `
-                <input type="checkbox" data-id="${task.id}" ${task.completed ? "checked" : ""} style="margin-right: 12px; cursor: pointer; width: 18px; height: 18px;">
-                <span style="flex: 1; ${task.completed ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${escapeHtml(task.title)}</span>
+                <input type="checkbox" data-id="${task.id}" style="margin-right: 12px; cursor: pointer; width: 18px; height: 18px;">
+                <span style="flex: 1;">${escapeHtml(task.title)}</span>
                 <span style="padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: ${priorityColors[task.priority]}; color: white; margin-right: 8px;">${task.priority}</span>
             `;
 
@@ -286,6 +292,8 @@
                 const id = this.getAttribute("data-id");
                 const isCompleted = this.checked;
 
+                console.log('✏️ Marking task as completed:', id);
+
                 const { error } = await supabase
                     .from("tasks")
                     .update({ 
@@ -302,12 +310,12 @@
                     return;
                 }
 
-                console.log('✅ Task updated:', id, isCompleted);
+                console.log('✅ Task marked as completed:', id);
                 
                 // Update statistics
                 await updateUserStatistics(isCompleted);
                 
-                // Reload dashboard
+                // Reload dashboard - this will hide the completed task
                 await loadDashboard();
             });
         });
@@ -382,7 +390,7 @@
 
             console.log('✅ Task added:', data);
             document.getElementById("task-input").value = "";
-            document.getElementById("priority-select").value = "Medium"; // Reset to default
+            document.getElementById("priority-select").value = "Medium";
             await loadDashboard();
         } catch (error) {
             console.error('Error adding task:', error);
@@ -444,21 +452,32 @@
     // UPDATE TASK COUNTER
     // ===============================
     function updateTaskCounter(tasks) {
-        const completed = tasks.filter(t => t.completed).length;
-        const total = tasks.length;
-        document.getElementById('task-counter').textContent = `${completed} out of ${total} completed`;
+        const incomplete = tasks.length;
+        
+        // Get total completed tasks count
+        supabase
+            .from("tasks")
+            .select("*", { count: 'exact' })
+            .eq("user_id", currentUser.id)
+            .eq("completed", true)
+            .then(({ count }) => {
+                const completed = count || 0;
+                const total = completed + incomplete;
+                document.getElementById('task-counter').textContent = `${completed} out of ${total} completed`;
+            });
     }
 
     // ===============================
-    // LOAD RECENT ACTIVITY
+    // LOAD RECENT ACTIVITY - ONLY 4
     // ===============================
     async function loadRecentActivity() {
+        // CRITICAL: Only fetch 4 most recent activities
         const { data, error } = await supabase
             .from("activity_log")
             .select("*")
             .eq("user_id", currentUser.id)
             .order("created_at", { ascending: false })
-            .limit(10);
+            .limit(4);  // THIS LIMITS TO 4 ACTIVITIES
 
         const activityList = document.getElementById('activity-list');
         activityList.innerHTML = "";
@@ -468,6 +487,8 @@
             activityList.innerHTML = '<li style="text-align: center; color: #999;">No activity yet</li>';
             return;
         }
+
+        console.log('✅ Recent activities loaded:', data?.length || 0);
 
         if (!data || data.length === 0) {
             activityList.innerHTML = '<li style="text-align: center; color: #999;">No activity yet. Start by adding tasks!</li>';

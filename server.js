@@ -8,11 +8,10 @@ const PORT = process.env.PORT || 3000;
 // Middleware to parse JSON
 app.use(express.json());
 
-// IMPORTANT: Serve static files from 'public' folder FIRST
-// This must come BEFORE the route handlers
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API endpoint to get Supabase config (safe to expose)
+
 app.get('/api/config', (req, res) => {
   res.json({
     supabaseUrl: process.env.SUPABASE_URL,
@@ -33,8 +32,16 @@ app.get('/reset-password', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'Project', 'resetPassword.html'));
 });
 
+app.get('/update-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'updatePassword.html'));
+});
+
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'src', 'Project', 'dashboard.html'));
+});
+
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'profile.html'));
 });
 
 // Default route
