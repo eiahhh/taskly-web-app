@@ -59,9 +59,9 @@
 .form-container {
     width: 100%;
     max-width: 380px;
-    text-align: left;
 }
 
+/* LOGO & HEADERS */
 .logo {
     width: 50px;
     height: 50px;
@@ -103,19 +103,31 @@ h2 {
 }
 
 .login-form input[type="email"],
-.login-form input[type="password"] {
+.password-wrapper input {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
+    padding: 10px 12px;
     border: 1px solid #aaa;
     border-radius: 6px;
     outline: none;
-    transition: border-color 0.2s ease;
+    font-size: 0.95rem;
+    height: 42px;                  
+    line-height: 42px;             
+    font-family: 'Inter', monospace; 
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.login-form input:focus {
+.login-form input:focus,
+.password-wrapper input:focus {
     border-color: #000;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
 
 .options {
     display: flex;
@@ -159,48 +171,6 @@ h2 {
     background-color: #333;
 }
 
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 20px 0;
-    color: #888;
-    font-size: 0.85rem;
-}
-
-.divider::before,
-.divider::after {
-    content: "";
-    flex: 1;
-    border-bottom: 1px solid #ddd;
-    margin: 0 10px;
-}
-
-.btn-google {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #000;
-    border-radius: 6px;
-    background-color: #fff;
-    color: #000;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-google:hover {
-    background-color: #f2f2f2;
-}
-
-.google-icon {
-    width: 30px;
-    height: 20px;
-}
-
 .register-text {
     text-align: center;
     margin-top: 20px;
@@ -225,12 +195,6 @@ h2 {
 
     .left-section {
         display: none;
-    }
-
-    .overlay-text {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
     }
 
     .right-section {

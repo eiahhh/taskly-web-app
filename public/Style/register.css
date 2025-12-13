@@ -147,6 +147,27 @@ h2 {
     text-decoration: underline;
 }
 
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.95rem;
+    height: 42px;                 
+    line-height: 42px;           
+    font-family: 'Inter', monospace; 
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.password-wrapper input:focus {
+    border-color: #000;
+}
+
 @media (max-width: 900px) {
     .container {
         flex-direction: column;
