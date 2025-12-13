@@ -33,10 +33,14 @@
                     <input type="email" id="email" name="email" placeholder="Enter your email" required>
 
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" name="password" placeholder="Enter password" required>
+                    </div>
+                    
+                    <div class="password-wrapper">
+                        <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
+                    </div>
 
-                    <label for="confirm-password">Confirm password</label>
-                    <input type="password" id="confirm-password" name="confirm-password" placeholder="Confirm your password" required>
 
                     <button type="submit" class="btn">Create account</button>
                 </form>
@@ -147,6 +151,23 @@
                 submitBtn.disabled = false;
             }
         });
+        function enableAutoReveal(inputId) {
+            const input = document.getElementById(inputId);
+            let timer;
+        
+            input.addEventListener("input", () => {
+                input.type = "text";   
+        
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    input.type = "password"; 
+                }, 1000); 
+            });
+        }
+
+        enableAutoReveal("password");
+        enableAutoReveal("confirm-password");
+
 
         // Initialize on page load
         initSupabase();
