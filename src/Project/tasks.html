@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskly - Tasks</title>
+
+    <!-- Remix Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Your Style -->
+    <link rel="stylesheet" href="/Style/tasks.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <h1 class="logo">taskly</h1>
+
+    <nav class="menu">
+        <a href="/dashboard" class="menu-item">
+            <i class="ri-dashboard-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/tasks" class="menu-item active">
+            <i class="ri-task-line"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="/ai-assistant" class="menu-item">
+            <i class="ri-robot-line"></i>
+            <span>AI Assistant</span>
+        </a>
+    </nav>
+
+    <div class="profile">
+        <i class="ri-user-line profile-icon"></i>
+        <div>
+            <p class="name" id="user-name">Loading...</p>
+            <p class="sub">Your Profile</p>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <h1>Tasks</h1>
+            <p>Manage and organize your daily tasks</p>
+        </div>
+        <div class="header-right">
+            <button class="btn-icon"><i class="ri-notification-line"></i></button>
+            <button class="btn-icon"><i class="ri-settings-3-line"></i></button>
+        </div>
+    </div>
+
+    <!-- Search and Actions Bar -->
+    <div class="actions-bar">
+        <div class="search-box">
+            <i class="ri-search-line"></i>
+            <input type="text" id="search-input" placeholder="Search Tasks...">
+        </div>
+        <button class="btn-new-event">
+            <i class="ri-add-line"></i>
+             New Task
+        </button>
+    </div>
+
+    <!-- Filter and Sort -->
+    <div class="filter-bar">
+        <button class="filter-btn">
+            <i class="ri-filter-line"></i>
+            Filter
+        </button>
+        <div class="sort-dropdown">
+            <button class="sort-btn">
+                Sort by: Due Date
+                <i class="ri-arrow-down-s-line"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Today's Tasks -->
+    <div class="tasks-section">
+        <div class="section-header">
+            <h2>Today's Task</h2>
+            <span class="task-count" id="today-count">0 Tasks</span>
+        </div>
+        <div class="task-list" id="today-list">
+            <p style="text-align: center; color: #999; padding: 20px;">Loading tasks...</p>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    <div class="tasks-section">
+        <div class="section-header">
+            <h2>Upcoming Tasks</h2>
+            <span class="task-count" id="upcoming-count">0 Tasks</span>
+        </div>
+        <div class="task-list" id="upcoming-list">
+            <p style="text-align: center; color: #999; padding: 20px;">Loading tasks...</p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+let supabase;
+let currentUser = null;
+
+/* ================= INITIALIZE SUPABASE ================= */
+async function initSupabase() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        
+        const { createClient } = window.supabase;
+        supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+        
+        console.log('✅ Supabase initialized');
+        
+        // Check authentication
+        await checkAuth();
+    } catch (error) {
+        console.error('❌ Failed to initialize:', error);
+        alert('Failed to connect to database. Please refresh the page.');
+    }
+}
+
+/* ============= CHECK AUTHENTICATION ============= */
+async function checkAuth() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+        console.error('Not authenticated:', error);
+        window.location.href = '/login';
+        return;
+    }
+    
+    currentUser = user;
+    console.log('✅ Current user:', currentUser);
+    
+    const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
+    document.getElementById('user-name').textContent = displayName;
+    
+    // Load tasks
+    fetchTasks();
+}
+
+/* ============= GET LOGGED IN USER ============= */
+async function getUser() {
+    if (!currentUser) {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) console.error(error);
+        currentUser = data.user;
+    }
+    return currentUser;
+}
+
+/* ============= FETCH TASKS ============= */
+async function fetchTasks() {
+    const user = await getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("datetime", { ascending: true });
+
+    if (error) {
+        console.error("Fetch error:", error);
+        document.getElementById("today-list").innerHTML = "<p style='text-align: center; color: #e74c3c; padding: 20px;'>Error loading tasks</p>";
+        document.getElementById("upcoming-list").innerHTML = "<p style='text-align: center; color: #e74c3c; padding: 20px;'>Error loading tasks</p>";
+        return;
+    }
+    
+    console.log('✅ Tasks loaded:', data);
+    renderTasks(data || []);
+}
+
+/* ============= RENDER TASKS ============= */
+function renderTasks(tasks) {
+    const todayList = document.getElementById("today-list");
+    const upcomingList = document.getElementById("upcoming-list");
+
+    todayList.innerHTML = "";
+    upcomingList.innerHTML = "";
+
+    const today = new Date().toDateString();
+    let todayCount = 0;
+    let upcomingCount = 0;
+
+    if (tasks.length === 0) {
+        todayList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No tasks yet. Add one to get started!</p>";
+        upcomingList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No upcoming tasks</p>";
+        document.getElementById('today-count').textContent = '0 Tasks';
+        document.getElementById('upcoming-count').textContent = '0 Tasks';
+        return;
+    }
+
+    tasks.forEach(task => {
+        const html = `
+            <div class="task-card">
+                <div class="task-left">
+                    <input type="checkbox" class="task-checkbox" data-id="${task.id}" ${task.completed ? "checked" : ""}>
+                    <div class="task-info">
+                        <h3 class="task-title">${escapeHtml(task.title)}</h3>
+                        <div class="task-meta">
+                            <span class="task-time">
+                                <i class="ri-time-line"></i>
+                                ${task.datetime ? new Date(task.datetime).toLocaleString() : 'No date set'}
+                            </span>
+                            <span class="task-category ${task.category || 'school'}">
+                                <i class="ri-bookmark-line"></i>
+                                ${task.category || 'School'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="task-right">
+                    <span class="priority-badge ${(task.priority || 'medium').toLowerCase()}">
+                        ${task.priority || 'medium'}
+                    </span>
+                    <button class="btn-menu delete-btn" data-id="${task.id}">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        if (task.datetime && new Date(task.datetime).toDateString() === today) {
+            todayList.insertAdjacentHTML("beforeend", html);
+            todayCount++;
+        } else {
+            upcomingList.insertAdjacentHTML("beforeend", html);
+            upcomingCount++;
+        }
+    });
+
+    if (todayCount === 0) {
+        todayList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No tasks for today</p>";
+    }
+    if (upcomingCount === 0) {
+        upcomingList.innerHTML = "<p style='text-align: center; color: #999; padding: 20px;'>No upcoming tasks</p>";
+    }
+
+    document.getElementById('today-count').textContent = `${todayCount} Task${todayCount !== 1 ? 's' : ''}`;
+    document.getElementById('upcoming-count').textContent = `${upcomingCount} Task${upcomingCount !== 1 ? 's' : ''}`;
+
+    setupCheckboxEvents();
+    setupDeleteEvents();
+}
+
+/* ============= ESCAPE HTML ============= */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/* ============= ADD TASK ============= */
+async function addTask(task) {
+    const user = await getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("tasks").insert([{
+        user_id: user.id,
+        title: task.title,
+        datetime: task.datetime,
+        category: task.category,
+        priority: task.priority,
+        completed: false
+    }]);
+
+    if (error) {
+        console.error(error);
+        alert('Failed to add task: ' + error.message);
+        return;
+    }
+    
+    console.log('✅ Task added successfully');
+    fetchTasks();
+}
+
+/* ============= CHECKBOX ============= */
+function setupCheckboxEvents() {
+    document.querySelectorAll(".task-checkbox").forEach(box => {
+        box.addEventListener("change", async () => {
+            const { error } = await supabase
+                .from("tasks")
+                .update({ 
+                    completed: box.checked,
+                    completed_at: box.checked ? new Date().toISOString() : null
+                })
+                .eq("id", box.dataset.id);
+
+            if (error) {
+                console.error('Error updating task:', error);
+                box.checked = !box.checked;
+                alert('Failed to update task');
+            }
+        });
+    });
+}
+
+/* ============= DELETE ============= */
+function setupDeleteEvents() {
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+            if (!confirm('Are you sure you want to delete this task?')) {
+                return;
+            }
+
+            const { error } = await supabase
+                .from("tasks")
+                .delete()
+                .eq("id", btn.dataset.id);
+
+            if (error) {
+                console.error('Error deleting task:', error);
+                alert('Failed to delete task');
+                return;
+            }
+
+            console.log('✅ Task deleted');
+            fetchTasks();
+        });
+    });
+}
+
+/* ============= SEARCH ============= */
+document.getElementById("search-input").addEventListener("input", function () {
+    const text = this.value.toLowerCase();
+    document.querySelectorAll(".task-card").forEach(card => {
+        const title = card.querySelector(".task-title").textContent.toLowerCase();
+        card.style.display = title.includes(text) ? "flex" : "none";
+    });
+});
+
+/* ============= SHOW ADD EVENT MODAL ============= */
+function showAddEventModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Event</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="event-form">
+                    <div class="form-group">
+                        <label>Event Title *</label>
+                        <input type="text" id="event-title" placeholder="Enter event title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date *</label>
+                        <input type="date" id="event-date" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start time *</label>
+                            <input type="time" id="event-start-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End time</label>
+                            <input type="time" id="event-end-time">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="event-category">
+                            <option value="School">School</option>
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select id="event-priority">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="event-description" placeholder="Add description (optional)"></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn-create" onclick="handleEventSubmit()">Create Event</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+
+    // Focus first input
+    setTimeout(() => {
+        document.getElementById('event-title').focus();
+    }, 100);
+}
+
+/* ============= CLOSE MODAL ============= */
+function closeModal() {
+    const overlay = document.querySelector('.modal-overlay');
+    if (overlay) {
+        overlay.style.animation = 'fadeOut 0.2s ease';
+        setTimeout(() => overlay.remove(), 200);
+    }
+}
+
+/* ============= HANDLE EVENT SUBMIT ============= */
+async function handleEventSubmit() {
+    const title = document.getElementById('event-title').value.trim();
+    const date = document.getElementById('event-date').value;
+    const startTime = document.getElementById('event-start-time').value;
+    const category = document.getElementById('event-category').value;
+    const priority = document.getElementById('event-priority').value;
+
+    if (!title || !date || !startTime) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    // Combine date and time
+    const datetime = new Date(`${date}T${startTime}`);
+
+    // Disable button
+    const btn = document.querySelector('.btn-create');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+
+    await addTask({
+        title,
+        datetime,
+        category,
+        priority
+    });
+
+    closeModal();
+}
+
+/* ============= ADD BUTTON ============= */
+document.querySelector(".btn-new-event").addEventListener("click", () => {
+    showAddEventModal();
+});
+
+/* ============= INITIAL LOAD ============= */
+initSupabase();
+</script>
+
+</body>
+</html>
