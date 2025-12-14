@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Assistant</title>
-    <link rel="stylesheet" href="style-ai-assistant.css">
+    <link rel="stylesheet" href="/Style/style-ai-assistant.css">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
 
@@ -16,18 +16,18 @@
     <h1 class="logo">taskly</h1>
 
     <nav class="menu">
-        <a href="dashboard.html" class="menu-item">Dashboard</a>
-        <a href="tasks.html" class="menu-item">Tasks</a>
-        <a href="ai-assistant.html" class="menu-item active">AI Assistant</a>
+        <a href="/dashboard" class="menu-item">Dashboard</a>
+        <a href="/tasks" class="menu-item">Tasks</a>
+        <a href="/ai-assistant" class="menu-item active">AI Assistant</a>
     </nav>
 
     <div class="profile">
-    <i class="ri-user-line profile-icon"></i>
-    <div>
-        <p class="name">Belle Mariano</p>
-        <p class="sub">Your Profile</p>
+        <i class="ri-user-line profile-icon"></i>
+        <div>
+            <p class="name" id="user-name">Loading...</p>
+            <p class="sub">Your Profile</p>
+        </div>
     </div>
-</div>
 </aside>
 
 
@@ -46,9 +46,10 @@
         <!-- Quick Actions -->
         <div class="quick-actions">
             <span>Quick Actions:</span>
-            <button>Schedule Meeting</button>
-            <button>Set Reminder</button>
-            <button>View Tasks</button>
+            <button data-action="What tasks do I have today?">Today's Tasks</button>
+            <button data-action="What should I focus on first?">Get Priorities</button>
+            <button data-action="How am I doing this week?">Weekly Summary</button>
+            <button data-action="What's overdue?">Overdue Tasks</button>
         </div>
 
         <!-- CHAT + RIGHT PANEL -->
@@ -57,33 +58,15 @@
             <!-- CHAT BOX -->
             <div class="chat-container">
 
-                <div class="chat-box">
+                <div class="chat-box" id="chat-box">
 
                     <div class="msg ai-msg">
-                        <img class="avatar" src="ai.png">
-                        <div>
-                            <div class="bubble">
-                                Hello! How can I assist you today?
-                            </div>
-                            <p class="timestamp">AI Assistant • 3 minutes ago</p>
+                        <div class="avatar-container">
+                            <i class="ri-robot-line" style="font-size: 24px;"></i>
                         </div>
-                    </div>
-
-                    <div class="msg user-msg">
                         <div>
                             <div class="bubble">
-                                Can you create a schedule for me?
-                            </div>
-                            <p class="timestamp">You • 2 minutes ago</p>
-                        </div>
-                        <img class="avatar" src="user.png">
-                    </div>
-
-                    <div class="msg ai-msg">
-                        <img class="avatar" src="ai.png">
-                        <div>
-                            <div class="bubble">
-                                Sure! What time would you like it to start?
+                                Hello! I'm your AI assistant. I can help you manage your tasks, check your schedule, and provide productivity insights. What would you like to know?
                             </div>
                             <p class="timestamp">AI Assistant • Just now</p>
                         </div>
@@ -93,10 +76,10 @@
 
                 <!-- CHAT INPUT -->
                 <div class="chat-input">
-                    <input type="text" placeholder="Type your message">
-                    <button>🎤</button>
-                    <button>📎</button>
-                    <button>📤</button>
+                    <input type="text" id="user-input" placeholder="Type your message..." disabled>
+                    <button id="send-btn" disabled>
+                        <i class="ri-send-plane-fill"></i>
+                    </button>
                 </div>
 
             </div>
@@ -114,26 +97,26 @@
                     <ul class="info-list">
 
                         <li>
-                            <div class="icon"></div>
+                            <div class="icon">📊</div>
                             <div>
-                                <p class="title"><strong>Smart Scheduling</strong></p>
-                                <p class="desc small">Find optimal meeting times based on availability</p>
+                                <p class="title"><strong>Task Analysis</strong></p>
+                                <p class="desc small">Analyze your tasks and provide insights</p>
                             </div>
                         </li>
 
                         <li>
-                            <div class="icon"></div>
+                            <div class="icon">⏰</div>
                             <div>
-                                <p class="title"><strong>Reminders</strong></p>
-                                <p class="desc small">Set up notifications for important events</p>
+                                <p class="title"><strong>Smart Reminders</strong></p>
+                                <p class="desc small">Get personalized task recommendations</p>
                             </div>
                         </li>
 
                         <li>
-                            <div class="icon"></div>
+                            <div class="icon">📈</div>
                             <div>
-                                <p class="title"><strong>Analytics</strong></p>
-                                <p class="desc small">Insights on your scheduling patterns</p>
+                                <p class="title"><strong>Productivity Insights</strong></p>
+                                <p class="desc small">Track your progress and streaks</p>
                             </div>
                         </li>
 
@@ -141,30 +124,27 @@
                 </div>
 
                 <div class="info-box">
-                    <h3>Recent Suggestions</h3>
+                    <h3>Example Questions</h3>
 
                     <div class="suggestion">
-                        <strong>Schedule daily meetings</strong>
-                        <span class="small">Every weekday at 1:00 PM</span>
+                        <strong>What tasks do I have today?</strong>
                     </div>
 
                     <div class="suggestion">
-                        <strong>Schedule daily meetings</strong>
-                        <span class="small">Every weekday at 1:00 PM</span>
+                        <strong>What should I prioritize?</strong>
                     </div>
 
                     <div class="suggestion">
-                        <strong>Schedule daily meetings</strong>
-                        <span class="small">Every weekday at 1:00 PM</span>
+                        <strong>How productive was I this week?</strong>
                     </div>
                 </div>
 
                 <div class="info-box">
-                    <h3>This week</h3>
+                    <h3>Your Stats</h3>
                     <div class="stats">
-                        <p>Events Scheduled <span>12</span></p>
-                        <p>Tasks Completed <span>12</span></p>
-                        <p>Free Hours <span>12</span></p>
+                        <p>Tasks Completed <span id="stat-completed">0</span></p>
+                        <p>Current Streak <span id="stat-streak">0</span></p>
+                        <p>Active Tasks <span id="stat-active">0</span></p>
                     </div>
                 </div>
 
@@ -174,94 +154,251 @@
 </main>
 </div>
 
+<!-- Supabase CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- ⭐⭐⭐ JAVASCRIPT FOR INTERACTIVITY ⭐⭐⭐ -->
 <script>
-// Elements
-const chatBox = document.querySelector('.chat-box');
-const input = document.querySelector('.chat-input input');
-const sendBtn = document.querySelector('.chat-input button:last-child');
+let supabase;
+let currentUser = null;
 
-// ----------------------------
+// Initialize Supabase
+async function initSupabase() {
+    try {
+        const response = await fetch('/api/config');
+        const config = await response.json();
+        
+        const { createClient } = window.supabase;
+        supabase = createClient(config.supabaseUrl, config.supabaseAnonKey);
+        
+        console.log('✅ Supabase initialized');
+        
+        // Check authentication
+        await checkAuth();
+    } catch (error) {
+        console.error('❌ Failed to initialize:', error);
+        alert('Failed to connect. Please refresh the page.');
+    }
+}
+
+// Check if user is authenticated
+async function checkAuth() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+        console.error('Not authenticated:', error);
+        window.location.href = '/login';
+        return;
+    }
+    
+    currentUser = user;
+    console.log('✅ Current user:', currentUser);
+    
+    const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
+    document.getElementById('user-name').textContent = displayName;
+    
+    // Enable chat input
+    document.getElementById('user-input').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    
+    // Load user stats
+    await loadUserStats();
+}
+
+// Load user statistics
+async function loadUserStats() {
+    try {
+        // Get statistics
+        const { data: stats } = await supabase
+            .from('user_statistics')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
+
+        if (stats) {
+            document.getElementById('stat-completed').textContent = stats.tasks_completed_total || 0;
+            document.getElementById('stat-streak').textContent = stats.current_streak_days || 0;
+        }
+
+        // Get active tasks count
+        const { data: tasks } = await supabase
+            .from('tasks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id)
+            .eq('completed', false);
+
+        const { count } = await supabase
+            .from('tasks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.id)
+            .eq('completed', false);
+
+        document.getElementById('stat-active').textContent = count || 0;
+
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// ============================================
+// CHAT FUNCTIONALITY
+// ============================================
+
+const chatBox = document.getElementById('chat-box');
+const input = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+
 // Add a message to the chat
-// ----------------------------
 function addMessage(text, sender = "user") {
     const msg = document.createElement("div");
     msg.classList.add("msg", sender === "user" ? "user-msg" : "ai-msg");
 
-    msg.innerHTML = sender === "user" 
-        ? `
+    if (sender === "user") {
+        msg.innerHTML = `
             <div>
-                <div class="bubble">${text}</div>
+                <div class="bubble">${escapeHtml(text)}</div>
                 <p class="timestamp">You • Just now</p>
             </div>
-            <img class="avatar" src="user.png">
-          `
-        : `
-            <img class="avatar" src="ai.png">
+            <div class="avatar-container">
+                <i class="ri-user-line" style="font-size: 24px;"></i>
+            </div>
+        `;
+    } else {
+        msg.innerHTML = `
+            <div class="avatar-container">
+                <i class="ri-robot-line" style="font-size: 24px;"></i>
+            </div>
             <div>
                 <div class="bubble">${text}</div>
                 <p class="timestamp">AI Assistant • Just now</p>
             </div>
-          `;
+        `;
+    }
 
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ----------------------------
-// Fake AI response
-// ----------------------------
-function fakeAiReply(userText) {
-    let reply;
-
-    if (userText.toLowerCase().includes("schedule")) {
-        reply = "Sure! What time should I schedule it?";
-    } else if (userText.toLowerCase().includes("reminder")) {
-        reply = "Okay! What would you like me to remind you about?";
-    } else if (userText.toLowerCase().includes("task")) {
-        reply = "Here are your upcoming tasks!";
-    } else {
-        reply = "Got it! Let me know if you'd like to schedule something or set a reminder.";
-    }
-
-    setTimeout(() => addMessage(reply, "ai"), 600);
+// Add typing indicator
+function showTypingIndicator() {
+    const indicator = document.createElement("div");
+    indicator.classList.add("msg", "ai-msg", "typing-indicator");
+    indicator.id = "typing-indicator";
+    
+    indicator.innerHTML = `
+        <div class="avatar-container">
+            <i class="ri-robot-line" style="font-size: 24px;"></i>
+        </div>
+        <div>
+            <div class="bubble">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    
+    chatBox.appendChild(indicator);
+    chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// ----------------------------
+// Remove typing indicator
+function hideTypingIndicator() {
+    const indicator = document.getElementById("typing-indicator");
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Get AI response from backend
+async function getAIResponse(userMessage) {
+    try {
+        const response = await fetch('/api/ai/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: userMessage,
+                userId: currentUser.id
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to get AI response');
+        }
+
+        const data = await response.json();
+        return data.response;
+
+    } catch (error) {
+        console.error('AI Error:', error);
+        return "I'm having trouble connecting right now. Please try again in a moment.";
+    }
+}
+
 // Send message
-// ----------------------------
-function sendMessage() {
+async function sendMessage() {
     const text = input.value.trim();
     if (!text) return;
 
-    addMessage(text, "user");
-    fakeAiReply(text);
+    // Disable input while processing
+    input.disabled = true;
+    sendBtn.disabled = true;
 
+    // Add user message
+    addMessage(text, "user");
     input.value = "";
+
+    // Show typing indicator
+    showTypingIndicator();
+
+    // Get AI response
+    const aiResponse = await getAIResponse(text);
+    
+    // Hide typing indicator
+    hideTypingIndicator();
+
+    // Add AI response
+    addMessage(aiResponse, "ai");
+
+    // Re-enable input
+    input.disabled = false;
+    sendBtn.disabled = false;
+    input.focus();
 }
 
-// ----------------------------
 // Event Listeners
-// ----------------------------
 sendBtn.addEventListener("click", sendMessage);
 
 input.addEventListener("keypress", e => {
     if (e.key === "Enter") sendMessage();
 });
 
-// ----------------------------
 // Quick Action Buttons
-// ----------------------------
 document.querySelectorAll('.quick-actions button').forEach(btn => {
     btn.addEventListener("click", () => {
-        const action = btn.textContent;
-        addMessage(action, "user");
-        fakeAiReply(action);
+        const action = btn.getAttribute('data-action') || btn.textContent;
+        input.value = action;
+        sendMessage();
     });
 });
+
+// Suggestion clicks
+document.querySelectorAll('.suggestion').forEach(suggestion => {
+    suggestion.addEventListener('click', () => {
+        const text = suggestion.querySelector('strong').textContent;
+        input.value = text;
+        sendMessage();
+    });
+});
+
+// Initialize on page load
+initSupabase();
 </script>
-
-
 </body>
 </html>

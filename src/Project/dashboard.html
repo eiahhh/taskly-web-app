@@ -451,22 +451,28 @@
     // ===============================
     // UPDATE TASK COUNTER
     // ===============================
-    function updateTaskCounter(tasks) {
-        const incomplete = tasks.length;
-        
-        // Get total completed tasks count
-        supabase
-            .from("tasks")
-            .select("*", { count: 'exact' })
-            .eq("user_id", currentUser.id)
-            .eq("completed", true)
-            .then(({ count }) => {
-                const completed = count || 0;
-                const total = completed + incomplete;
-                document.getElementById('task-counter').textContent = `${completed} out of ${total} completed`;
-            });
+    async function updateTaskCounter(tasks) {
+    const incomplete = tasks.length;
+
+    const { count, error } = await supabase
+        .from("tasks")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", currentUser.id)
+        .eq("completed", true);
+
+    if (error) {
+        console.error("Counter error:", error);
+        return;
     }
 
+    const completed = count || 0;
+    const total = completed + incomplete;
+
+    const counterEl = document.getElementById("task-counter");
+    if (counterEl) {
+        counterEl.textContent = `${completed} out of ${total} completed`;
+    }
+}
     // ===============================
     // LOAD RECENT ACTIVITY - ONLY 4
     // ===============================
