@@ -115,17 +115,25 @@ body {
 
 /* ========== LOGOUT ========== */
 .logout {
-    margin-top: auto;
-    padding-top: 10px;
-}
-
-.logout .edit-profile-btn {
-    background-color: #444;
+    margin-top: 16px;
 }
 
 .logout button {
-    font-size: 15px;
-    font-weight: bold;
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #a0a0a0;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logout button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 /* ========== HEADER ========== */

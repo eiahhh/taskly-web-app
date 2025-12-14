@@ -66,12 +66,6 @@
         </div>
 
         <div class="card">
-            <i class="ri-time-line card-icon"></i>
-            <h2 id="stat-focus">0h</h2>
-            <p>Focus Time</p>
-        </div>
-
-        <div class="card">
             <i class="ri-fire-line card-icon"></i>
             <h2 id="stat-streak">0</h2>
             <p>Day Streak</p>
@@ -437,11 +431,6 @@
             console.error('Error loading statistics:', statsError);
         } else if (stats) {
             document.getElementById('stat-completed').textContent = stats.tasks_completed_total || 0;
-            
-            const focusHours = Math.floor((stats.focus_time_minutes || 0) / 60);
-            const focusMinutes = (stats.focus_time_minutes || 0) % 60;
-            document.getElementById('stat-focus').textContent = focusHours > 0 ? `${focusHours}h ${focusMinutes}m` : `${focusMinutes}m`;
-            
             document.getElementById('stat-streak').textContent = stats.current_streak_days || 0;
         }
 
