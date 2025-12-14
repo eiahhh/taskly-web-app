@@ -599,14 +599,6 @@ html, body {
 }
 
 @media (max-width: 968px) {
-    .sidebar {
-        width: 200px;
-    }
-
-    .main {
-        margin-left: 200px;
-    }
-
     .info-panel {
         display: none;
     }
@@ -616,7 +608,17 @@ html, body {
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .sidebar {
+        width: 200px;
+    }
+
+    .main {
+        margin-left: 200px;
+    }
+}
+
+@media (max-width: 480px) {
     .sidebar {
         width: 60px;
         padding: 20px 10px;
@@ -628,6 +630,10 @@ html, body {
 
     .menu-item span {
         display: none;
+    }
+
+    .profile {
+        padding: 12px;
     }
 
     .profile div {
@@ -670,3 +676,4 @@ html, body {
         font-size: 18px;
     }
 }
+
