@@ -18,18 +18,32 @@
     <h1 class="logo">taskly</h1>
 
     <nav class="menu">
-        <a href="/dashboard" class="menu-item active">Dashboard</a>
-        <a href="/tasks" class="menu-item">Tasks</a>
-        <a href="/ai-assistant" class="menu-item">AI Assistant</a>
-        <a href="/profile" class="menu-item">Profile</a>
+        <a href="/dashboard" class="menu-item active">
+            <i class="ri-dashboard-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="/tasks" class="menu-item">
+            <i class="ri-task-line"></i>
+            <span>Tasks</span>
+        </a>
+        <a href="/ai-assistant" class="menu-item">
+            <i class="ri-robot-line"></i>
+            <span>AI Assistant</span>
+        </a>
     </nav>
 
-    <div class="profile">
-        <i class="ri-user-line profile-icon"></i>
-        <div>
-            <p class="name" id="user-name">Belle Mariano</p>
-            <p class="sub">Your Profile</p>
+    <a href="/profile" class="profile-link">
+        <div class="profile">
+            <i class="ri-user-line profile-icon"></i>
+            <div>
+                <p class="name" id="user-name">Belle Mariano</p>
+                <p class="sub">Your Profile</p>
+            </div>
         </div>
+    </a>
+
+    <div class="logout">
+        <button id="logoutBtn">Logout</button>
     </div>
 </aside>
 
@@ -452,27 +466,28 @@
     // UPDATE TASK COUNTER
     // ===============================
     async function updateTaskCounter(tasks) {
-    const incomplete = tasks.length;
+        const incomplete = tasks.length;
 
-    const { count, error } = await supabase
-        .from("tasks")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", currentUser.id)
-        .eq("completed", true);
+        const { count, error } = await supabase
+            .from("tasks")
+            .select("*", { count: "exact", head: true })
+            .eq("user_id", currentUser.id)
+            .eq("completed", true);
 
-    if (error) {
-        console.error("Counter error:", error);
-        return;
+        if (error) {
+            console.error("Counter error:", error);
+            return;
+        }
+
+        const completed = count || 0;
+        const total = completed + incomplete;
+
+        const counterEl = document.getElementById("task-counter");
+        if (counterEl) {
+            counterEl.textContent = `${completed} out of ${total} completed`;
+        }
     }
 
-    const completed = count || 0;
-    const total = completed + incomplete;
-
-    const counterEl = document.getElementById("task-counter");
-    if (counterEl) {
-        counterEl.textContent = `${completed} out of ${total} completed`;
-    }
-}
     // ===============================
     // LOAD RECENT ACTIVITY - ONLY 4
     // ===============================
@@ -531,6 +546,20 @@
         const days = Math.floor(seconds / 86400);
         return days === 1 ? '1 day ago' : `${days} days ago`;
     }
+
+    // Logout functionality
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        const { error } = await supabase.auth.signOut();
+        
+        if (error) {
+            console.error('Logout error:', error);
+            alert('Failed to logout. Please try again.');
+            return;
+        }
+        
+        console.log('✅ User logged out');
+        window.location.href = '/login';
+    });
 
     // Initialize on page load
     initSupabase();

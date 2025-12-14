@@ -32,12 +32,18 @@
         </a>
     </nav>
 
-    <div class="profile">
-        <i class="ri-user-line profile-icon"></i>
-        <div>
-            <p class="name" id="user-name">Loading...</p>
-            <p class="sub">Your Profile</p>
+    <a href="/profile" class="profile-link">
+        <div class="profile">
+            <i class="ri-user-line profile-icon"></i>
+            <div>
+                <p class="name" id="user-name">Loading...</p>
+                <p class="sub">Your Profile</p>
+            </div>
         </div>
+    </a>
+
+    <div class="logout">
+        <button id="logoutBtn">Logout</button>
     </div>
 </aside>
 
@@ -464,6 +470,20 @@ async function handleEventSubmit() {
 
     closeModal();
 }
+
+/* ============= LOGOUT FUNCTIONALITY ============= */
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+        return;
+    }
+    
+    console.log('✅ User logged out');
+    window.location.href = '/login';
+});
 
 /* ============= ADD BUTTON ============= */
 document.querySelector(".btn-new-event").addEventListener("click", () => {
