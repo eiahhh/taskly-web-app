@@ -6,285 +6,375 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ============================================
-// 1. CRITICAL ENVIRONMENT CHECK
-// ============================================
-console.log('\n🔍 Checking Environment Variables...');
-const requiredEnv = ['GEMINI_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-const missingEnv = requiredEnv.filter(key => !process.env[key]);
+// Middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
-if (missingEnv.length > 0) {
-  console.error(`\n❌ FATAL ERROR: Missing required .env variables: ${missingEnv.join(', ')}`);
-  console.error('👉 Please check your .env file and restart the server.\n');
-  process.exit(1);
-}
-console.log('✅ Environment variables valid.');
-
-// ============================================
-// 2. INITIALIZE SERVICES
-// ============================================
-console.log('🔧 Initializing Supabase...');
+// Supabase with service role for RAG data retrieval
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
 );
 
 // ============================================
-// 3. MIDDLEWARE & STATIC ASSETS
+// API CONFIG
 // ============================================
-app.use(express.json());
-
-// Serve "public" folder for general assets
-app.use(express.static(path.join(__dirname, 'public')));
-
-// CRITICAL: Serve "src" so HTML files can find their specific CSS/JS
-app.use('/src', express.static(path.join(__dirname, 'src')));
+app.get('/api/config', (req, res) => {
+  res.json({
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY
+  });
+});
 
 // ============================================
-// 4. ROBUST GEMINI API FUNCTION (THE FIX)
+// RAG CHATBOT ENDPOINT
 // ============================================
-async function callGeminiAPI(prompt) {
-  // Use Node.js native fetch (v18+) or fallback to node-fetch
-  let fetchFunc = globalThis.fetch;
-  if (!fetchFunc) {
-    try {
-      fetchFunc = (await import('node-fetch')).default;
-    } catch (e) {
-      throw new Error("Node.js version too old. Please use Node v18+ or install 'node-fetch'.");
-    }
-  }
+app.post('/api/ai/chat', async (req, res) => {
+  const { message, userId } = req.body;
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  
-  // 👉 HARDCODED SAFE MODEL FOR FREE TIER
-  // 'gemini-1.5-flash' is the rolling alias that works best on free tier
-  const model = 'gemini-1.5-flash'; 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const requestBody = {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 800, // Increased slightly for better answers
-    }
-  };
+  console.log('\n' + '='.repeat(60));
+  console.log('💬 User said:', message);
+  console.log('👤 User ID:', userId ? userId.substring(0, 8) + '...' : 'none');
 
   try {
-    const response = await fetchFunc(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
+    let prompt;
+
+    // If we have a userId, use RAG (retrieve user data)
+    if (userId) {
+      console.log('📥 Retrieving user data for RAG...');
+      const userData = await retrieveUserData(userId);
+      prompt = buildRAGPrompt(message, userData);
+    } else {
+      // No user ID, use simple prompt
+      prompt = `You are a helpful AI assistant. Keep responses concise.\n\nUser: ${message}\n\nAssistant:`;
+    }
+
+    // Call Gemini API
+    const aiResponse = await callGemini(prompt);
+    
+    console.log('🤖 AI responded:', aiResponse.substring(0, 60) + '...');
+
+    // Save conversation to history (if userId provided)
+    if (userId) {
+      await saveConversation(userId, message, aiResponse);
+    }
+
+    console.log('✅ Complete!');
+    console.log('='.repeat(60) + '\n');
+
+    res.json({ response: aiResponse });
+
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    console.log('='.repeat(60) + '\n');
+    
+    res.json({ 
+      response: "I'm having trouble right now. Please try again in a moment." 
     });
-
-    const data = await response.json();
-
-    // Detailed Error Handling
-    if (!response.ok) {
-      const errorMsg = data.error?.message || response.statusText;
-      console.error(`❌ API Error (${response.status}):`, errorMsg);
-
-      if (response.status === 404) {
-        throw new Error(`Model '${model}' not found. Your API key might vary. Try checking Google AI Studio.`);
-      }
-      if (response.status === 429) {
-        throw new Error("Rate Limit Exceeded. Please wait a moment.");
-      }
-      throw new Error(`Gemini API Error: ${errorMsg}`);
-    }
-
-    if (!data.candidates || !data.candidates[0]?.content?.parts?.[0]?.text) {
-      throw new Error('Gemini response was empty or blocked by safety filters.');
-    }
-
-    return data.candidates[0].content.parts[0].text;
-
-  } catch (error) {
-    // Pass the error up to be handled by the route
-    throw error;
   }
-}
+});
 
 // ============================================
-// 5. RAG PIPELINE FUNCTIONS (RESTORED)
+// RAG: RETRIEVE USER DATA
 // ============================================
+async function retrieveUserData(userId) {
+  console.log('  📋 Fetching profile...');
+  const { data: profile, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
 
-async function retrieveUserContext(userId) {
-  console.log('📥 RETRIEVE: Fetching user data...');
-  try {
-    // Run queries in parallel for speed
-    const [profile, tasks, stats, activity, history] = await Promise.all([
-      supabase.from('user_profiles').select('*').eq('user_id', userId).single(),
-      supabase.from('tasks').select('*').eq('user_id', userId).order('datetime', { ascending: true }),
-      supabase.from('user_statistics').select('*').eq('user_id', userId).single(),
-      supabase.from('activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
-      supabase.from('conversation_history').select('message, response, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5)
-    ]);
+  console.log('  📋 Fetching tasks...');
+  const { data: tasks, error: tasksError } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .order('datetime', { ascending: true });
 
-    return {
-      profile: profile.data,
-      allTasks: tasks.data || [],
-      stats: stats.data || {},
-      activity: activity.data || [],
-      conversationHistory: history.data || []
-    };
+  console.log('  📋 Fetching statistics...');
+  const { data: stats, error: statsError } = await supabase
+    .from('user_statistics')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
 
-  } catch (error) {
-    console.error('❌ RETRIEVE Error:', error.message);
-    return { profile: null, allTasks: [], stats: {}, activity: [], conversationHistory: [] };
-  }
-}
+  console.log('  📋 Fetching activity...');
+  const { data: activity, error: activityError } = await supabase
+    .from('activity_log')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(5);
 
-function augmentContext(retrievedData) {
-  console.log('🔧 AUGMENT: Structuring data...');
-  const { profile, allTasks, stats, activity, conversationHistory } = retrievedData;
-  const now = new Date();
-  
-  const completedTasks = allTasks.filter(t => t.completed);
-  const incompleteTasks = allTasks.filter(t => !t.completed);
-  
-  // Specific task buckets
-  const overdueTasks = incompleteTasks.filter(t => t.datetime && new Date(t.datetime) < now);
-  const todayTasks = incompleteTasks.filter(t => t.datetime && new Date(t.datetime).toDateString() === now.toDateString());
-  const upcomingTasks = incompleteTasks.filter(t => t.datetime && new Date(t.datetime) > now).slice(0, 5);
-  const highPriority = incompleteTasks.filter(t => t.priority === 'High' || t.priority === 'Urgent');
+  console.log('  ✅ Data retrieved!');
 
   return {
-    userName: profile?.full_name || 'User',
-    taskStats: {
-        total: allTasks.length,
-        completed: completedTasks.length,
-        pending: incompleteTasks.length,
-        completionRate: allTasks.length > 0 ? Math.round((completedTasks.length / allTasks.length) * 100) : 0
-    },
-    lists: {
-        overdue: overdueTasks,
-        today: todayTasks,
-        upcoming: upcomingTasks,
-        highPriority: highPriority
-    },
-    history: conversationHistory.reverse(), // Oldest to newest for context
-    streak: stats?.current_streak_days || 0
+    profile: profile || {},
+    tasks: tasks || [],
+    stats: stats || {},
+    activity: activity || []
   };
 }
 
-function buildRAGPrompt(userMessage, ctx) {
-  console.log('📝 GENERATE: Building Prompt...');
+// ============================================
+// RAG: BUILD PROMPT WITH USER DATA
+// ============================================
+function buildRAGPrompt(userMessage, userData) {
+  const { profile, tasks, stats, activity } = userData;
   
-  let prompt = `You are an AI assistant for Taskly. 
-CONTEXT:
-- User: ${ctx.userName}
-- Streak: ${ctx.streak} days
-- Progress: ${ctx.taskStats.completed}/${ctx.taskStats.total} tasks done (${ctx.taskStats.completionRate}%)
+  const now = new Date();
+  const today = now.toDateString();
+
+  // Process tasks
+  const todayTasks = tasks.filter(t => 
+    t.datetime && new Date(t.datetime).toDateString() === today && !t.completed
+  );
+  
+  const overdueTasks = tasks.filter(t => 
+    t.datetime && new Date(t.datetime) < now && !t.completed
+  );
+  
+  const upcomingTasks = tasks.filter(t => 
+    t.datetime && new Date(t.datetime) > now && !t.completed
+  ).slice(0, 5);
+
+  const completedTasks = tasks.filter(t => t.completed);
+  const incompleteTasks = tasks.filter(t => !t.completed);
+
+  const highPriorityTasks = incompleteTasks.filter(t => 
+    t.priority === 'High' || t.priority === 'Urgent'
+  );
+
+  // Build context prompt
+  let prompt = `You are Taskly AI, a helpful task management assistant with access to the user's real data.
+
+USER INFO:
+- Name: ${profile?.full_name || 'User'}
+- Total Tasks: ${tasks.length}
+- Completed: ${completedTasks.length}
+- Incomplete: ${incompleteTasks.length}
+- Current Streak: ${stats?.current_streak_days || 0} days
+- All-Time Completed: ${stats?.tasks_completed_total || 0}
+
 `;
 
-  if (ctx.lists.overdue.length > 0) {
-    prompt += `\n⚠️ OVERDUE TASKS:\n${ctx.lists.overdue.map(t => `- ${t.title} (Due: ${new Date(t.datetime).toLocaleDateString()})`).join('\n')}`;
-  }
-  
-  if (ctx.lists.today.length > 0) {
-    prompt += `\n📅 TODAY'S TASKS:\n${ctx.lists.today.map(t => `- ${t.title} [${t.priority}]`).join('\n')}`;
-  } else if (ctx.lists.upcoming.length > 0) {
-    prompt += `\n🔮 UPCOMING:\n${ctx.lists.upcoming.map(t => `- ${t.title}`).join('\n')}`;
-  }
-
-  if (ctx.history.length > 0) {
-    prompt += `\n\nCONVERSATION HISTORY:\n${ctx.history.map(c => `User: ${c.message}\nAI: ${c.response}`).join('\n')}`;
+  // Add today's tasks
+  if (todayTasks.length > 0) {
+    prompt += `TODAY'S TASKS (${todayTasks.length}):\n`;
+    todayTasks.forEach((t, i) => {
+      const time = t.datetime ? new Date(t.datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'No time';
+      prompt += `${i + 1}. "${t.title}" - ${t.priority} priority, ${time}\n`;
+    });
+    prompt += '\n';
   }
 
-  prompt += `\n\nCURRENT MESSAGE: "${userMessage}"\n\nINSTRUCTIONS: Give a helpful, motivating, concise response based on the data above. If they have overdue tasks, gently remind them.`;
-  
+  // Add overdue tasks
+  if (overdueTasks.length > 0) {
+    prompt += `⚠️ OVERDUE TASKS (${overdueTasks.length}):\n`;
+    overdueTasks.slice(0, 3).forEach((t, i) => {
+      const days = Math.floor((now - new Date(t.datetime)) / (1000 * 60 * 60 * 24));
+      prompt += `${i + 1}. "${t.title}" - ${days} days overdue, ${t.priority}\n`;
+    });
+    prompt += '\n';
+  }
+
+  // Add high priority tasks
+  if (highPriorityTasks.length > 0) {
+    prompt += `🔴 HIGH PRIORITY (${highPriorityTasks.length}):\n`;
+    highPriorityTasks.slice(0, 3).forEach((t, i) => {
+      prompt += `${i + 1}. "${t.title}" - ${t.priority}\n`;
+    });
+    prompt += '\n';
+  }
+
+  // Add upcoming tasks
+  if (upcomingTasks.length > 0) {
+    prompt += `📅 UPCOMING (${upcomingTasks.length}):\n`;
+    upcomingTasks.forEach((t, i) => {
+      const date = new Date(t.datetime);
+      prompt += `${i + 1}. "${t.title}" - ${date.toLocaleDateString()}, ${t.priority}\n`;
+    });
+    prompt += '\n';
+  }
+
+  // Add recent activity
+  if (activity.length > 0) {
+    prompt += `RECENT ACTIVITY:\n`;
+    activity.forEach((a, i) => {
+      prompt += `${i + 1}. ${a.description}\n`;
+    });
+    prompt += '\n';
+  }
+
+  prompt += `USER MESSAGE: "${userMessage}"
+
+INSTRUCTIONS:
+- Answer based on their ACTUAL data shown above
+- Be conversational, friendly, and helpful
+- Reference specific tasks when relevant
+- Keep responses concise (2-4 sentences unless more detail needed)
+- Use natural language
+
+RESPONSE:`;
+
   return prompt;
 }
 
 // ============================================
-// 6. API ROUTES
+// SAVE CONVERSATION TO HISTORY
 // ============================================
-
-// --- Config Endpoint ---
-app.get('/api/config', (req, res) => {
-  res.json({
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY // Ensure this is in your .env if client needs it
-  });
-});
-
-// --- Debug Endpoint ---
-app.get('/api/test-gemini', async (req, res) => {
-  console.log('\n🧪 Testing Gemini connection...');
+async function saveConversation(userId, message, response) {
   try {
-    const response = await callGeminiAPI("Reply with 'Connection Successful' and a smiley face.");
-    console.log('✅ Test Result:', response);
-    res.json({ success: true, message: response });
+    await supabase
+      .from('conversation_history')
+      .insert({
+        user_id: userId,
+        message: message,
+        response: response
+      });
+    console.log('  💾 Saved to history');
   } catch (error) {
-    console.error('❌ Test Failed:', error.message);
-    res.status(500).json({ success: false, error: error.message });
+    console.log('  ⚠️ Could not save to history:', error.message);
   }
-});
+}
 
-// --- Main Chat Endpoint ---
-app.post('/api/ai/chat', async (req, res) => {
-  console.log('\n💬 New Chat Request');
-  try {
-    const { message, userId } = req.body;
-    
-    if (!message || !userId) {
-      return res.status(400).json({ error: 'Missing message or userId' });
+// ============================================
+// GEMINI API FUNCTION
+// ============================================
+async function callGemini(userMessage) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY not found');
+  }
+
+  // Working Gemini 2.x models
+  const models = [
+    { name: 'gemini-2.5-flash', version: 'v1beta' }
+  ];
+
+  let lastError = null;
+
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/${model.version}/models/${model.name}:generateContent?key=${apiKey}`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: userMessage }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 800,
+            topP: 0.95,
+            topK: 40
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`  ❌ ${model.name} failed:`, errorText.substring(0, 80));
+        lastError = new Error(errorText);
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) {
+        console.log(`  ❌ ${model.name} returned empty`);
+        continue;
+      }
+
+      console.log(`  ✅ ${model.name} worked!`);
+      return text;
+
+    } catch (error) {
+      console.log(`  ❌ ${model.name} error:`, error.message);
+      lastError = error;
+      continue;
     }
+  }
 
-    // 1. Retrieve & Augment
-    const rawData = await retrieveUserContext(userId);
-    const context = augmentContext(rawData);
-    
-    // 2. Build Prompt
-    const prompt = buildRAGPrompt(message, context);
-    
-    // 3. Generate Response
-    const aiResponse = await callGeminiAPI(prompt);
-    
-    // 4. Save History (Async - don't wait)
-    supabase.from('conversation_history')
-      .insert({ user_id: userId, message, response: aiResponse })
-      .catch(err => console.error('Failed to save history:', err.message));
+  throw new Error(`All models failed. Last error: ${lastError?.message}`);
+}
 
-    console.log('✅ Response sent to user.');
-    res.json({ response: aiResponse });
+// ============================================
+// TEST ENDPOINT
+// ============================================
+app.get('/api/test', async (req, res) => {
+  console.log('\n🧪 Testing Gemini...\n');
+
+  try {
+    const response = await callGemini('Say hello in a friendly way!');
+    
+    res.json({
+      success: true,
+      message: response
+    });
 
   } catch (error) {
-    console.error('❌ Chat Pipeline Failed:', error.message);
-    res.status(500).json({ error: 'I am having trouble processing that right now.' });
+    res.json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
-// --- HTML Routes ---
-// Helper to point to src/Project folder
-const servePage = (fileName) => (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'Project', fileName));
-};
+// ============================================
+// HTML ROUTES
+// ============================================
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'login.html'));
+});
 
-app.get('/login', servePage('login.html'));
-app.get('/register', servePage('register.html'));
-app.get('/reset-password', servePage('resetPassword.html'));
-app.get('/update-password', servePage('updatePassword.html'));
-app.get('/dashboard', servePage('dashboard.html'));
-app.get('/profile', servePage('profile.html'));
-app.get('/tasks', servePage('tasks.html'));
-app.get('/ai-assistant', servePage('ai-assistant.html'));
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'register.html'));
+});
 
-// Root Redirect
-app.get('/', (req, res) => res.redirect('/login'));
+app.get('/reset-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'resetPassword.html'));
+});
 
-// 404 Handler
-app.use((req, res) => {
-    console.log(`❌ 404: ${req.url}`);
-    res.status(404).send('Page Not Found');
+app.get('/update-password', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'updatePassword.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'dashboard.html'));
+});
+
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'profile.html'));
+});
+
+app.get('/tasks', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'tasks.html'));
+});
+
+app.get('/ai-assistant', (req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'Project', 'ai-assistant.html'));
+});
+
+app.get('/', (req, res) => {
+  res.redirect('/login');
 });
 
 // ============================================
-// 7. START SERVER
+// START SERVER
 // ============================================
 app.listen(PORT, () => {
-  console.log(`\n==================================================`);
-  console.log(`🚀 SERVER RUNNING on http://localhost:${PORT}`);
-  console.log(`👉 Test API: http://localhost:${PORT}/api/test-gemini`);
-  console.log(`==================================================\n`);
+  console.log('\n' + '='.repeat(60));
+  console.log('🤖 RAG-POWERED CHATBOT SERVER');
+  console.log('='.repeat(60));
+  console.log(`✅ Running: http://localhost:${PORT}`);
+  console.log(`🤖 Gemini: ${process.env.GEMINI_API_KEY ? '✅' : '❌ MISSING'}`);
+  console.log(`🗄️  Supabase: ${process.env.SUPABASE_URL ? '✅' : '❌ MISSING'}`);
+  console.log(`📝 Test: http://localhost:${PORT}/api/test`);
+  console.log('='.repeat(60) + '\n');
 });
