@@ -3,7 +3,7 @@
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.84.0",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0",
+    "express": "^4.19.2",
     "node-fetch": "^3.3.2",
     "openai": "^6.10.0"
   }
