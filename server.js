@@ -1,7 +1,12 @@
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
+import 'dotenv/config';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
+
+// These are needed for __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -368,13 +373,19 @@ app.get('/', (req, res) => {
 // ============================================
 // START SERVER
 // ============================================
-app.listen(PORT, () => {
-  console.log('\n' + '='.repeat(60));
-  console.log('🤖 RAG-POWERED CHATBOT SERVER');
-  console.log('='.repeat(60));
-  console.log(`✅ Running: http://localhost:${PORT}`);
-  console.log(`🤖 Gemini: ${process.env.GEMINI_API_KEY ? '✅' : '❌ MISSING'}`);
-  console.log(`🗄️  Supabase: ${process.env.SUPABASE_URL ? '✅' : '❌ MISSING'}`);
-  console.log(`📝 Test: http://localhost:${PORT}/api/test`);
-  console.log('='.repeat(60) + '\n');
-});
+// Only start server locally (not on Vercel)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log('\n' + '='.repeat(60));
+    console.log('🤖 RAG-POWERED CHATBOT SERVER');
+    console.log('='.repeat(60));
+    console.log(`✅ Running: http://localhost:${PORT}`);
+    console.log(`🤖 Gemini: ${process.env.GEMINI_API_KEY ? '✅' : '❌ MISSING'}`);
+    console.log(`🗄️  Supabase: ${process.env.SUPABASE_URL ? '✅' : '❌ MISSING'}`);
+    console.log(`📝 Test: http://localhost:${PORT}/api/test`);
+    console.log('='.repeat(60) + '\n');
+  });
+}
+
+// Export for Vercel
+export default app;
